@@ -62,7 +62,16 @@ def render_html(scenarios: list[dict[str, object]], template: str) -> str:
     return template.replace("__TRACE_DATA__", data)
 
 
-async def scenario(count: int, label: str) -> dict[str, object]:
+UPLOAD_OBSERVATIONS = (
+    "بارگذاری یک عکس ۱۲ مگابایتی ناموفق بود.",
+    "بارگذاری یک عکس دیگر با حجم ۱۲ مگابایت موفق بود.",
+    "بارگذاری یک عکس ۲ مگابایتی موفق بود.",
+)
+UPLOAD_FINDING = "عکس‌های هم‌حجم نتیجهٔ متفاوت داشتند؛ علت خطا هنوز معلوم نیست."
+UPLOAD_INSIGHT = "پیش از تغییر سقف حجم، فرمت و پیام خطا را در شرایط یکسان بررسی کنید."
+
+
+async def scenario(count: int, label: str, *, uploads: bool = False) -> dict[str, object]:
     payloads: list[str] = []
     nodes: list[dict[str, object]] = []
     captured: list[str] = []
@@ -123,7 +132,10 @@ async def scenario(count: int, label: str) -> dict[str, object]:
                     })
                     await call("register_item", {
                         "item_id": f"i{index}",
-                        "normalized_content": "این قلم، مشاهده‌ای از پیش تعریف‌شده در نمونه است.",
+                        "normalized_content": (
+                            UPLOAD_OBSERVATIONS[index] if uploads
+                            else "این قلم، مشاهده‌ای از پیش تعریف‌شده در نمونه است."
+                        ),
                         "evidence_ids": [f"e{index}"],
                     })
                 findings = []
@@ -131,7 +143,10 @@ async def scenario(count: int, label: str) -> dict[str, object]:
                     findings.append(f"f{start}")
                     await call("register_finding", {
                         "finding_id": f"f{start}",
-                        "statement": "این یافتهٔ مصنوعی به تحلیل‌ها و شواهد زیر ارجاع دارد.",
+                        "statement": (
+                            UPLOAD_FINDING if uploads
+                            else "این یافتهٔ مصنوعی به تحلیل‌ها و شواهد زیر ارجاع دارد."
+                        ),
                         "supporting_item_ids": [f"i{i}" for i in range(
                             start, min(start + 3, count))],
                         "supporting_evidence_ids": [f"e{i}" for i in range(
@@ -139,7 +154,10 @@ async def scenario(count: int, label: str) -> dict[str, object]:
                     })
                 await call("register_insight", {
                     "insight_id": "result",
-                    "statement": "این نتیجهٔ از پیش تعریف‌شده، مسیر ارجاع‌های نمونه را نشان می‌دهد.",
+                    "statement": (
+                        UPLOAD_INSIGHT if uploads
+                        else "این نتیجهٔ از پیش تعریف‌شده، مسیر ارجاع‌های نمونه را نشان می‌دهد."
+                    ),
                     "supporting_finding_ids": findings,
                     "supporting_evidence_ids": [f"e{i}" for i in range(count)],
                 })
@@ -158,26 +176,31 @@ async def scenario(count: int, label: str) -> dict[str, object]:
     return result
 
 
-async def generate(output: Path) -> None:
+async def generate(output: Path, *, uploads: bool = False) -> None:
     scenarios = []
     for count, label in ((1, "سبک · یک شاهد"), (5, "متوسط · پنج شاهد"),
                          (25, "بزرگ‌تر · بیست‌وپنج شاهد")):
         scenarios.append(await asyncio.wait_for(scenario(count, label), timeout=90))
+    if uploads:
+        scenarios.append(await asyncio.wait_for(
+            scenario(3, "بارگذاری عکس · گزارش‌های متناقض", uploads=True), timeout=90,
+        ))
     template = Path(__file__).with_name("viewer.template.html").read_text(encoding="utf-8")
     output.parent.mkdir(parents=True, exist_ok=True)
     if output.exists():
         raise ValueError("output already exists; do not overwrite")
     output.write_text(render_html(scenarios, template), encoding="utf-8")
-    print(json.dumps({"viewer": "PASS", "synthetic_only": True, "scenarios": 3,
-                      "evidence_counts": [1, 5, 25]}, sort_keys=True))
+    print(json.dumps({"viewer": "PASS", "synthetic_only": True, "scenarios": len(scenarios),
+                      "evidence_counts": [1, 5, 25] + ([3] if uploads else [])}, sort_keys=True))
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--conflicting-uploads", action="store_true")
     arguments = parser.parse_args()
     try:
-        asyncio.run(generate(arguments.output))
+        asyncio.run(generate(arguments.output, uploads=arguments.conflicting_uploads))
     except Exception:  # noqa: BLE001
         print("TRACE_VIEWER=FAIL output_suppressed=true", file=sys.stderr)
         return 1
