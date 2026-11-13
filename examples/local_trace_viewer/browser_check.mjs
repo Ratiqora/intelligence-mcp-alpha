@@ -77,7 +77,19 @@ try{
   check(await evaluate("document.querySelector('#back').disabled"),"root-back-disabled");
   const uploadScenario = await evaluate("JSON.parse(document.getElementById('trace-data').textContent).some(d=>d.id==='conflicting-uploads')");
   if(uploadScenario){
-    check(await evaluate("document.querySelector('#scenario').selectedOptions[0].textContent==='Photo uploads · conflicting reports'"),"conflicting-uploads-open-first");
+    await rpc("Emulation.setDeviceMetricsOverride",{width:390,height:844,deviceScaleFactor:1,mobile:false});
+    check(await evaluate("(()=>{const start=document.getElementById('guide-start');const box=start.getBoundingClientRect();return start.checkVisibility() && box.top>=0 && box.bottom<=innerHeight && !document.getElementById('technical-view').checkVisibility()})()"),"mobile-start-visible-before-scrolling");
+    check(await evaluate("!document.getElementById('guide-feedback').checkVisibility() && !document.getElementById('guide-reports').checkVisibility()"),"guide-does-not-spoil-answer");
+    await screenshot("walkthrough-mobile.png");
+    check(await evaluate("document.getElementById('guide-start').click();document.activeElement.id==='guide-reports-title' && document.querySelectorAll('#guide-report-list li').length===3 && document.documentElement.scrollWidth<=innerWidth+1"),"guide-compares-three-reports");
+    check(await evaluate("document.getElementById('guide-lower').click();document.getElementById('guide-feedback').innerText.includes('One 12 MB photo failed and another succeeded.') && document.getElementById('guide-lower').getAttribute('aria-pressed')==='true'"),"guide-explains-lower-limit-choice");
+    check(await evaluate("document.getElementById('guide-investigate').click();document.getElementById('guide-feedback').innerText.startsWith('Investigate first.') && document.getElementById('guide-lower').getAttribute('aria-pressed')==='false'"),"guide-explains-investigate-choice");
+    await rpc("Emulation.setDeviceMetricsOverride",{width:1280,height:920,deviceScaleFactor:1,mobile:false});
+    await evaluate("window.scrollTo(0,0)");
+    await screenshot("walkthrough-desktop.png");
+    check(await evaluate("document.getElementById('guide-explore').click();document.activeElement.id==='guide-return' && document.getElementById('technical-view').checkVisibility()"),"technical-view-opens");
+    check(await evaluate("document.getElementById('guide-return').click();document.activeElement.id==='guide-explore' && document.getElementById('guide-feedback').innerText.startsWith('Investigate first.')"),"walkthrough-preserves-choice-on-return");
+    check(await evaluate("document.getElementById('guide-explore').click();document.querySelector('#scenario').selectedOptions[0].textContent==='Photo uploads · conflicting reports'"),"conflicting-uploads-open-first");
     await clickNode("f0","Finding");
     check(await evaluate("document.querySelectorAll('#references button[data-node^=i]').length===3"),"three-upload-observations");
     for(const [id,statement] of [["i0","Uploading a 12 MB photo failed."],["i1","Uploading another 12 MB photo succeeded."],["i2","Uploading a 2 MB photo succeeded."]]){
@@ -86,6 +98,8 @@ try{
       await evaluate("document.getElementById('back').click()");
     }
     await evaluate("document.getElementById('root').click()");
+  }else{
+    check(await evaluate("document.getElementById('technical-view').checkVisibility() && !document.getElementById('guided-demo').checkVisibility()"),"technical-view-without-upload-scenario");
   }
   await screenshot("desktop.png");
   await clickNode("f0","Finding");await clickNode("i0","Observation");
