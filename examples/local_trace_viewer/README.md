@@ -32,10 +32,11 @@ The evidence directory receives browser-results.json and desktop/mobile screensh
 
 ## Conflicting upload reports
 
-Add `--conflicting-uploads` to include the upload scenario and open it by default.
-One 12 MB photo fails to upload, another succeeds, and a 2 MB photo succeeds.
-Follow the finding to all three observations. The graph validates the links;
-it does not establish a size limit or prove the cause of the failure.
+Add `--conflicting-uploads` to start with a guided walkthrough. Compare the
+three reports and choose whether to lower the size limit or investigate first.
+Select **Explore the evidence trail** to open the graph and follow its references.
+The graph validates the links; it does not establish a size limit or prove the
+cause of the failure.
 
 Generating the viewer requires the Alpha 4 package pair and Python 3.10 or
 newer with compatible dependencies. After generation, open the HTML in a

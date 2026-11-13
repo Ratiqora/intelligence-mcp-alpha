@@ -2,7 +2,7 @@
 
 Ratiqora helps MCP developers trace a conclusion back to the observations that support it. The local server checks evidence integrity and graph references, and exposes redacted evidence metadata over stdio.
 
-**[Download the one-minute demo](https://github.com/Ratiqora/intelligence-mcp-alpha/releases/download/v0.1.0-alpha.4/ratiqora-alpha4-demo.html)** and open the HTML file in your browser. No installation or Python is needed. The demo opens on two 12 MB uploads with opposite outcomes. Select the supporting finding, then follow the three reports to see what the evidence supports. The controls and sample reports are in English.
+**[Download the one-minute demo](https://github.com/Ratiqora/intelligence-mcp-alpha/releases/download/v0.1.0-alpha.4/ratiqora-alpha4-demo.html)** and open the HTML file in your browser. No installation or Python is needed. The English walkthrough asks whether a product team should lower its photo upload limit. Compare three reports, choose a next step, and optionally explore the evidence trail.
 
 ## A two-minute example: photo uploads
 
