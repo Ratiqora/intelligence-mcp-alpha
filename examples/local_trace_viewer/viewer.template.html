@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="fa" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
-<title>Ratiqora — مسیر شواهد</title>
+<title>Ratiqora — Evidence trail</title>
 <style>
 :root{--ink:#183b3b;--muted:#5b7270;--line:#dce6e2;--accent:#087f75;--paper:#f5f7f4;--white:#fff}
 *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.8 Tahoma,"Segoe UI",sans-serif}
@@ -20,12 +20,12 @@ select{min-width:220px}.metrics{display:grid;grid-template-columns:repeat(5,1fr)
 .metric{background:white;border:1px solid var(--line);border-radius:13px;padding:11px 15px}.metric b{display:block;font:700 25px "Segoe UI",sans-serif}.metric span{color:var(--muted);font-size:12px}
 .workspace{display:grid;grid-template-columns:280px minmax(0,1fr);gap:18px;align-items:start}.panel{background:white;border:1px solid var(--line);border-radius:16px;padding:22px;min-width:0}
 aside input{width:100%;margin:10px 0}.small{font-size:12px;color:var(--muted)}#node-list{max-height:540px;overflow:auto;padding:4px}
-.node-button{display:block;width:100%;text-align:right;border:1px solid var(--line);background:#fff;border-radius:10px;padding:12px;margin:8px 0;color:var(--ink)}
+.node-button{display:block;width:100%;text-align:start;border:1px solid var(--line);background:#fff;border-radius:10px;padding:12px;margin:8px 0;color:var(--ink)}
 .node-button:hover,.node-button[aria-current=true]{background:#edf8f4;border-color:#71b6a9}.kind{display:inline-block;font-size:11px;border-radius:6px;background:#e6f2ed;color:#23665a;padding:1px 7px;margin-bottom:5px}
 .node-button strong{display:block;font-size:13px;line-height:1.9}.navigation{display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:15px;margin-bottom:20px}
 .navigation button,.crumb{border:0;background:#eff5f2;border-radius:8px;color:var(--ink);padding:5px 10px;font-size:12px}.navigation button:disabled{opacity:.4;cursor:default}
 #breadcrumbs{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.crumb:last-child{background:#d3eee4;font-weight:bold}.separator{color:#91a39c}
-#detail-title{overflow-wrap:anywhere}.notice{border-right:3px solid var(--accent);background:#eef8f3;border-radius:7px;padding:12px 15px;font-size:13px;margin:16px 0}
+#detail-title{overflow-wrap:anywhere}.notice{border-inline-start:3px solid var(--accent);background:#eef8f3;border-radius:7px;padding:12px 15px;font-size:13px;margin:16px 0}
 #references{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.reference-group{min-width:0}.reference-group .node-button{height:auto}
 dl{display:grid;grid-template-columns:140px minmax(0,1fr);gap:8px;margin:10px 0}dt{font-size:12px;color:var(--muted)}dd{margin:0;overflow-wrap:anywhere;font-size:13px}code{font:12px/1.8 Consolas,monospace}
 details{border-top:1px solid var(--line);padding-top:16px;margin-top:24px}summary{cursor:pointer;font-size:13px;color:var(--muted)}footer{color:var(--muted);font-size:12px;margin-top:20px}.empty{padding:20px 0;color:var(--muted)}
@@ -35,64 +35,66 @@ details{border-top:1px solid var(--line);padding-top:16px;margin-top:24px}summar
 <body>
 <header>
 <div class="brand" dir="ltr">RATIQORA / LOCAL LAB</div>
-<h1>پشتوانهٔ هر نتیجه را ببینید</h1>
-<p>از نتیجه شروع کنید و روی یافته‌ها، تحلیل‌ها و شواهد پشتیبان کلیک کنید تا مسیر هر ارجاع روشن شود.</p>
-<div class="badges"><span class="badge">دادهٔ کاملاً مصنوعی</span><span class="badge">بدون اینترنت</span><span class="badge">ثبت ارجاع؛ نه تأیید صحت ادعا</span></div>
+<h1>See the evidence behind an insight</h1>
+<p>Start with an insight, then follow the findings, observations, and evidence behind it.</p>
+<div class="badges"><span class="badge">Synthetic data</span><span class="badge">Works offline</span><span class="badge">Evidence links don’t prove a claim</span></div>
 </header>
 <div class="page">
-<div class="topbar"><div><label for="scenario">پیچیدگی نمونه</label><br><select id="scenario"></select></div><p>این صفحه یک نمای ذخیره‌شده از اجرای MCP است؛ اتصال زنده به سرور ندارد.</p></div>
-<section class="metrics" id="metrics" aria-label="شمارش موجودیت‌ها"></section>
+<div class="topbar"><div><label for="scenario">Scenario</label><br><select id="scenario"></select></div><p>This saved MCP snapshot runs without a live server connection.</p></div>
+<section class="metrics" id="metrics" aria-label="Entity counts"></section>
 <div class="workspace">
-<aside class="panel"><strong>موجودیت‌های نمونه</strong><label class="small" for="search"><br>جست‌وجو در عنوان یا شناسه</label><input id="search" type="search" placeholder="مثلاً شاهد یا نتیجه" autocomplete="off"><div id="match-count" class="small" aria-live="polite"></div><div id="node-list"></div></aside>
+<aside class="panel"><strong>Browse the evidence trail</strong><label class="small" for="search"><br>Search by title or ID</label><input id="search" type="search" placeholder="e.g. evidence or insight" autocomplete="off"><div id="match-count" class="small" aria-live="polite"></div><div id="node-list"></div></aside>
 <main class="panel">
-<nav class="navigation" aria-label="پیمایش مسیر"><button id="back" type="button">بازگشت</button><button id="root" type="button">نتیجهٔ اصلی</button><div id="breadcrumbs"></div></nav>
+<nav class="navigation" aria-label="Evidence trail navigation"><button id="back" type="button">Back</button><button id="root" type="button">Back to insight</button><div id="breadcrumbs"></div></nav>
 <div id="detail-kind" class="kind"></div><h2 id="detail-title"></h2><p id="detail-description"></p><div id="notice" class="notice"></div>
 <div id="references"></div><div id="source-meta"></div>
-<details><summary>مشخصات فنی این موجودیت</summary><dl id="technical"></dl></details>
+<details><summary>Technical details</summary><dl id="technical"></dl></details>
 </main>
 </div>
-<footer>این نمونه تحلیل خودکار اسناد نیست. اتصال سند به محتوای قابل‌مشاهده برای مدل همچنان تأییدنشده است (unverified). متن خام شواهد در این فایل وجود ندارد.</footer>
+<footer>This demo uses predefined observations and does not analyze documents. Whether source documents match what a model sees remains unverified. This file contains no raw evidence.</footer>
 </div>
 <script id="trace-data" type="application/json">__TRACE_DATA__</script>
 <script>
 "use strict";
 const datasets=JSON.parse(document.getElementById("trace-data").textContent);
-const labels={SourceRecord:"منبع",RawEvidence:"شاهد",IntelligenceItem:"قلم تحلیل",Finding:"یافته",Insight:"نتیجه"};
-const countsLabels={sources:"منبع",evidence:"شاهد",items:"قلم تحلیل",findings:"یافته",insights:"نتیجه"};
-const fa=value=>new Intl.NumberFormat("fa-IR").format(value);
+const labels={SourceRecord:"Source",RawEvidence:"Evidence",IntelligenceItem:"Observation",Finding:"Finding",Insight:"Insight"};
+const countsLabels={sources:"Sources",evidence:"Evidence records",items:"Observations",findings:"Findings",insights:"Insights"};
+const formatNumber=new Intl.NumberFormat("en").format;
 const $=id=>document.getElementById(id);
 let dataset, nodes, trail=[];
 function element(tag,text,className){const node=document.createElement(tag);if(text!==undefined)node.textContent=text;if(className)node.className=className;return node;}
 function addRow(dl,label,value){if(value===undefined||value===null)return;dl.append(element("dt",label),element("dd",String(value)));}
 function nodeButton(id){const node=nodes[id];const button=element("button",undefined,"node-button");button.type="button";button.dataset.node=id;button.setAttribute("aria-current",String(id===trail[trail.length-1]));button.append(element("span",labels[node.entity_type],"kind"),element("strong",node.title));button.addEventListener("click",()=>{trail.push(id);render();});return button;}
-function renderList(){const term=$("search").value.trim().toLocaleLowerCase();const filtered=Object.values(nodes).filter(n=>(n.title+" "+n.id+" "+labels[n.entity_type]).toLocaleLowerCase().includes(term));$("node-list").replaceChildren();for(const node of filtered)$("node-list").append(nodeButton(node.id));$("match-count").textContent=fa(filtered.length)+" مورد";if(!filtered.length)$("node-list").append(element("p","موردی پیدا نشد.","empty"));}
-function group(label,ids){if(!ids||!ids.length)return;const section=element("section",undefined,"reference-group");section.append(element("h3",label+" · "+fa(ids.length)));for(const id of ids)section.append(nodeButton(id));$("references").append(section);}
+function renderList(){const term=$("search").value.trim().toLocaleLowerCase();const filtered=Object.values(nodes).filter(n=>(n.title+" "+n.id+" "+labels[n.entity_type]).toLocaleLowerCase().includes(term));$("node-list").replaceChildren();for(const node of filtered)$("node-list").append(nodeButton(node.id));$("match-count").textContent=formatNumber(filtered.length)+(filtered.length===1?" match":" matches");if(!filtered.length)$("node-list").append(element("p","No matches found.","empty"));}
+function group(label,ids){if(!ids||!ids.length)return;const section=element("section",undefined,"reference-group");section.append(element("h3",label+" · "+formatNumber(ids.length)));for(const id of ids)section.append(nodeButton(id));$("references").append(section);}
 function render(){
  const node=nodes[trail[trail.length-1]];
  $("back").disabled=trail.length<=1;
  $("breadcrumbs").replaceChildren();
- trail.forEach((id,index)=>{if(index)$("breadcrumbs").append(element("span","‹","separator"));const b=element("button",labels[nodes[id].entity_type],"crumb");b.type="button";b.addEventListener("click",()=>{trail=trail.slice(0,index+1);render();});$("breadcrumbs").append(b);});
+ trail.forEach((id,index)=>{if(index)$("breadcrumbs").append(element("span","›","separator"));const b=element("button",labels[nodes[id].entity_type],"crumb");b.type="button";b.addEventListener("click",()=>{trail=trail.slice(0,index+1);render();});$("breadcrumbs").append(b);});
  $("detail-kind").textContent=labels[node.entity_type];
  $("detail-title").textContent=node.title;
  $("detail-description").textContent=node.statement||node.normalized_content||"";
  $("references").replaceChildren();$("source-meta").replaceChildren();$("technical").replaceChildren();
- $("notice").textContent=node.entity_type==="RawEvidence"?"این شاهد با بایت‌های مصنوعی و هش مطابق ثبت شده است. فقط مشخصات و منبع آن نمایش داده می‌شود؛ متن خام نمایش داده نمی‌شود.":"برای مشاهدهٔ پشتوانهٔ این مورد، یکی از ارجاع‌های زیر را انتخاب کنید.";
- if(node.entity_type==="SourceRecord")$("notice").textContent="این منبع صرفاً برای آزمایش ساخته شده است و مرجع واقعی یا ادعای تأییدشده نیست.";
- group("یافته‌های پشتیبان",node.supporting_finding_ids);
- group("تحلیل‌های پشتیبان",node.supporting_item_ids);
- group("شواهد ارجاع‌شده",node.supporting_evidence_ids||node.evidence_ids);
- if(node.source_record_id)group("منبع شاهد",[node.source_record_id]);
- if(node.entity_type==="SourceRecord"){const dl=element("dl");addRow(dl,"نوع منبع",node.source_kind);addRow(dl,"ارجاع مصنوعی",node.external_reference);addRow(dl,"زمان ثبت نمونه",node.collected_at);$("source-meta").append(dl);}
- addRow($("technical"),"شناسه",node.id);addRow($("technical"),"نسخهٔ قرارداد",node.contract_version);addRow($("technical"),"منشأ شاهد",node.evidence_origin);addRow($("technical"),"SHA-256",node.integrity);addRow($("technical"),"روش تولید",node.producer_kind);
+ $("notice").textContent=node.entity_type==="RawEvidence"?"The synthetic evidence matched its SHA-256 hash. Only its metadata and source are shown.":"Select a reference below to see what supports this entry.";
+ if(node.entity_type==="SourceRecord")$("notice").textContent="This source was created for the demo.";
+ group("Supporting findings",node.supporting_finding_ids);
+ group("Supporting observations",node.supporting_item_ids);
+ group("Referenced evidence",node.supporting_evidence_ids||node.evidence_ids);
+ if(node.source_record_id)group("Evidence source",[node.source_record_id]);
+ if(node.entity_type==="SourceRecord"){const dl=element("dl");addRow(dl,"Source type",node.source_kind);addRow(dl,"Synthetic reference",node.external_reference);addRow(dl,"Sample collection time",node.collected_at);$("source-meta").append(dl);}
+ addRow($("technical"),"ID",node.id);addRow($("technical"),"Contract version",node.contract_version);addRow($("technical"),"Evidence origin",node.evidence_origin);addRow($("technical"),"SHA-256",node.integrity);addRow($("technical"),"Producer type",node.producer_kind);
  renderList();
 }
-function selectScenario(index){dataset=datasets[index];nodes=Object.fromEntries(dataset.nodes.map(n=>[n.id,n]));trail=[dataset.root_id];$("search").value="";$("metrics").replaceChildren();for(const [key,label]of Object.entries(countsLabels)){const item=element("div",undefined,"metric");item.append(element("b",fa(dataset.counts[key])),element("span",label));$("metrics").append(item);}render();}
+function selectScenario(index){dataset=datasets[index];nodes=Object.fromEntries(dataset.nodes.map(n=>[n.id,n]));trail=[dataset.root_id];$("search").value="";$("metrics").replaceChildren();for(const [key,label]of Object.entries(countsLabels)){const item=element("div",undefined,"metric");item.append(element("b",formatNumber(dataset.counts[key])),element("span",label));$("metrics").append(item);}render();}
 datasets.forEach((d,index)=>{const option=element("option",d.label);option.value=String(index);$("scenario").append(option);});
 $("scenario").addEventListener("change",()=>selectScenario(Number($("scenario").value)));
 $("search").addEventListener("input",renderList);
 $("back").addEventListener("click",()=>{if(trail.length>1){trail.pop();render();}});
 $("root").addEventListener("click",()=>{trail=[dataset.root_id];render();});
-selectScenario(0);
+const initialIndex=Math.max(0,datasets.findIndex(d=>d.id==="conflicting-uploads"));
+$("scenario").value=String(initialIndex);
+selectScenario(initialIndex);
 </script>
 </body>
 </html>
