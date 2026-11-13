@@ -1,0 +1,39 @@
+[project]
+name = "ratiqora-intelligence-mcp"
+version = "0.1.0a4"
+description = "Local-first MCP runtime for Ratiqora Intelligence Core."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE", "TRADEMARKS.md"]
+requires-python = ">=3.10"
+dependencies = [
+    "mcp==2.2.0",
+    "ratiqora-intelligence-core==0.2.0",
+]
+
+[project.scripts]
+ratiqora-alpha-trial = "intelligence_mcp.trial:main"
+ratiqora-intelligence-mcp = "intelligence_mcp.server:main"
+
+[project.optional-dependencies]
+dev = [
+    "build==1.6.1",
+    "pytest==9.1.1",
+    "pytest-asyncio==1.4.0",
+    "ruff==0.16.8",
+]
+
+[build-system]
+requires = ["setuptools>=77.0.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["intelligence_mcp*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
