@@ -20,7 +20,7 @@ This table is an illustrative scenario. The packaged trial builds its own synthe
 
 1. Download the two wheels, constraints and checksum file from [Alpha 4](https://github.com/Ratiqora/intelligence-mcp-alpha/releases/tag/v0.1.0-alpha.4).
 2. Follow the [quickstart](docs/alpha4-quickstart.md) for Windows or Linux.
-3. Run the synthetic trial. To explore the graph visually, generate the [local trace viewer](examples/local_trace_viewer/README.md) and open the resulting HTML in a browser. No model API key is needed.
+3. Run the synthetic trial. To explore the graph visually, generate the [local trace viewer](examples/local_trace_viewer/README.md) and open the resulting HTML in a browser. Add `--conflicting-uploads` to explore two equally large photos with opposite outcomes. The generated page needs only a browser. No model API key is needed.
 
 Alpha 4 is an experimental single-project, in-memory runtime. Use synthetic data for these examples. It is not a hosted service, a general file connector or a production system.
 

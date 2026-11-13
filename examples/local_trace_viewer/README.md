@@ -29,3 +29,14 @@ node browser_check.mjs <generated-html> <new-evidence-directory> <edge-executabl
 ```
 
 The evidence directory receives browser-results.json and desktop/mobile screenshots. These generated artifacts stay outside the repository; do not commit them or use the checker against a page containing real evidence. Normal viewing needs only a local browser, not Node.
+
+## Conflicting upload reports
+
+Add `--conflicting-uploads` to the generation command to include a fourth scenario.
+One 12 MB photo fails to upload, another succeeds, and a 2 MB photo succeeds.
+Follow the finding to all three observations. The graph validates the links;
+it does not establish a size limit or prove the cause of the failure.
+
+Generating the viewer requires the Alpha 4 package pair and Python 3.10 or
+newer with compatible dependencies. After generation, open the HTML in a
+browser; viewing it does not require Python.
