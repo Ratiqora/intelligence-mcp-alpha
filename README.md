@@ -2,6 +2,8 @@
 
 Ratiqora helps MCP developers trace a conclusion back to the observations that support it. The local server checks evidence integrity and graph references, and exposes redacted evidence metadata over stdio.
 
+**[Download the one-minute demo](https://github.com/Ratiqora/intelligence-mcp-alpha/releases/download/v0.1.0-alpha.4/ratiqora-alpha4-demo.html)** and open the HTML file in your browser. No installation or Python is needed. The demo opens on two 12 MB uploads with opposite outcomes. Select the supporting finding, then follow the three reports to see what the evidence supports. The interface and reports are in Persian; the demo includes a short English introduction.
+
 ## A two-minute example: photo uploads
 
 Three customers reported failed uploads for photos above 10 MB. Another uploaded a 2 MB photo successfully. These observations make file size worth testing, but they do not establish a 10 MB limit.
@@ -26,6 +28,9 @@ Alpha 4 is an experimental single-project, in-memory runtime. Use synthetic data
 
 ## Contribute
 
-A useful first contribution is a synthetic trace with conflicting customer observations. Start with the [example generator](examples/local_trace_viewer/generate.py): keep both observations traceable, avoid presenting an unproven cause as fact, and verify the generated viewer opens without network access. Open an issue with the proposed scenario or submit a focused PR with reproduction steps. Never include real customer data or raw evidence.
+- **Docs and packaging:** [Test the quickstart on a fresh Windows or Linux environment](https://github.com/Ratiqora/intelligence-mcp-alpha/issues/3) and report the first step that could be clearer.
+- **MCP examples:** [Propose a checkout scenario with conflicting reports](https://github.com/Ratiqora/intelligence-mcp-alpha/issues/4) and show what conclusion the evidence supports.
+
+Use synthetic data and include reproduction steps with a focused PR. Never include real customer data or raw evidence.
 
 This repository is a curated snapshot of the MCP source. The matching Core wheel includes its Python implementation. See [LICENSE](LICENSE), [NOTICE](NOTICE) and [SECURITY.md](SECURITY.md).
