@@ -14,11 +14,11 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
 TITLES = {
-    "SourceRecord": "منبع مصنوعی",
-    "RawEvidence": "شاهد مصنوعی",
-    "IntelligenceItem": "قلم تحلیل نمونه",
-    "Finding": "یافتهٔ نمونه",
-    "Insight": "نتیجهٔ نمونه",
+    "SourceRecord": "Synthetic source",
+    "RawEvidence": "Synthetic evidence",
+    "IntelligenceItem": "Sample observation",
+    "Finding": "Sample finding",
+    "Insight": "Sample insight",
 }
 
 
@@ -63,12 +63,12 @@ def render_html(scenarios: list[dict[str, object]], template: str) -> str:
 
 
 UPLOAD_OBSERVATIONS = (
-    "بارگذاری یک عکس ۱۲ مگابایتی ناموفق بود.",
-    "بارگذاری یک عکس دیگر با حجم ۱۲ مگابایت موفق بود.",
-    "بارگذاری یک عکس ۲ مگابایتی موفق بود.",
+    "Uploading a 12 MB photo failed.",
+    "Uploading another 12 MB photo succeeded.",
+    "Uploading a 2 MB photo succeeded.",
 )
-UPLOAD_FINDING = "عکس‌های هم‌حجم نتیجهٔ متفاوت داشتند؛ علت خطا هنوز معلوم نیست."
-UPLOAD_INSIGHT = "پیش از تغییر سقف حجم، فرمت و پیام خطا را در شرایط یکسان بررسی کنید."
+UPLOAD_FINDING = "Two photos of the same size had different outcomes. The cause of the failure is still unknown."
+UPLOAD_INSIGHT = "Before changing the upload size limit, compare file formats and error messages under the same conditions."
 
 
 async def scenario(count: int, label: str, *, uploads: bool = False) -> dict[str, object]:
@@ -134,7 +134,7 @@ async def scenario(count: int, label: str, *, uploads: bool = False) -> dict[str
                         "item_id": f"i{index}",
                         "normalized_content": (
                             UPLOAD_OBSERVATIONS[index] if uploads
-                            else "این قلم، مشاهده‌ای از پیش تعریف‌شده در نمونه است."
+                            else "This observation was written for the demo."
                         ),
                         "evidence_ids": [f"e{index}"],
                     })
@@ -145,7 +145,7 @@ async def scenario(count: int, label: str, *, uploads: bool = False) -> dict[str
                         "finding_id": f"f{start}",
                         "statement": (
                             UPLOAD_FINDING if uploads
-                            else "این یافتهٔ مصنوعی به تحلیل‌ها و شواهد زیر ارجاع دارد."
+                            else "This sample finding links to the observations and evidence below."
                         ),
                         "supporting_item_ids": [f"i{i}" for i in range(
                             start, min(start + 3, count))],
@@ -156,7 +156,7 @@ async def scenario(count: int, label: str, *, uploads: bool = False) -> dict[str
                     "insight_id": "result",
                     "statement": (
                         UPLOAD_INSIGHT if uploads
-                        else "این نتیجهٔ از پیش تعریف‌شده، مسیر ارجاع‌های نمونه را نشان می‌دهد."
+                        else "This sample insight shows how to follow the evidence trail."
                     ),
                     "supporting_finding_ids": findings,
                     "supporting_evidence_ids": [f"e{i}" for i in range(count)],
@@ -172,18 +172,20 @@ async def scenario(count: int, label: str, *, uploads: bool = False) -> dict[str
         raise ValueError("stderr capture did not terminate")
     check_private("".join(captured))
     result = {"label": label, "counts": expected, "root_id": "result", "nodes": nodes}
+    if uploads:
+        result["id"] = "conflicting-uploads"
     check_private(json.dumps(result, ensure_ascii=False))
     return result
 
 
 async def generate(output: Path, *, uploads: bool = False) -> None:
     scenarios = []
-    for count, label in ((1, "سبک · یک شاهد"), (5, "متوسط · پنج شاهد"),
-                         (25, "بزرگ‌تر · بیست‌وپنج شاهد")):
+    for count, label in ((1, "Small · 1 evidence record"), (5, "Medium · 5 evidence records"),
+                         (25, "Large · 25 evidence records")):
         scenarios.append(await asyncio.wait_for(scenario(count, label), timeout=90))
     if uploads:
         scenarios.append(await asyncio.wait_for(
-            scenario(3, "بارگذاری عکس · گزارش‌های متناقض", uploads=True), timeout=90,
+            scenario(3, "Photo uploads · conflicting reports", uploads=True), timeout=90,
         ))
     template = Path(__file__).with_name("viewer.template.html").read_text(encoding="utf-8")
     output.parent.mkdir(parents=True, exist_ok=True)

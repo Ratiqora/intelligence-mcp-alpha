@@ -35,7 +35,7 @@ async function evaluate(expression){
 }
 async function waitPage(){
   for(let attempt=0;attempt<80;attempt++){
-    if(await evaluate("document.readyState==='complete' && document.getElementById('detail-kind')?.textContent==='نتیجه'"))return;
+    if(await evaluate("document.readyState==='complete' && document.getElementById('detail-kind')?.textContent==='Insight'"))return;
     await delay(100);
   }
   throw new Error("page did not initialize");
@@ -72,26 +72,38 @@ try{
   await rpc("Emulation.setDeviceMetricsOverride",{width:1280,height:920,deviceScaleFactor:1,mobile:false});
   await rpc("Page.navigate",{url:pathToFileURL(path.resolve(htmlFile)).href});
   await waitPage();
-  check(await evaluate("document.documentElement.dir==='rtl'"),"Persian-RTL");
+  check(await evaluate("document.documentElement.lang==='en' && document.documentElement.dir==='ltr'"),"English-LTR");
   check(await evaluate("JSON.parse(document.getElementById('trace-data').textContent).every(d=>d.nodes.every(n=>!('content' in n)))"),"no-raw-content-field");
   check(await evaluate("document.querySelector('#back').disabled"),"root-back-disabled");
+  const uploadScenario = await evaluate("JSON.parse(document.getElementById('trace-data').textContent).some(d=>d.id==='conflicting-uploads')");
+  if(uploadScenario){
+    check(await evaluate("document.querySelector('#scenario').selectedOptions[0].textContent==='Photo uploads · conflicting reports'"),"conflicting-uploads-open-first");
+    await clickNode("f0","Finding");
+    check(await evaluate("document.querySelectorAll('#references button[data-node^=i]').length===3"),"three-upload-observations");
+    for(const [id,statement] of [["i0","Uploading a 12 MB photo failed."],["i1","Uploading another 12 MB photo succeeded."],["i2","Uploading a 2 MB photo succeeded."]]){
+      await clickNode(id,"Observation");
+      check(await evaluate("document.querySelector('#detail-description').textContent==="+JSON.stringify(statement)),"upload-statement-"+id);
+      await evaluate("document.getElementById('back').click()");
+    }
+    await evaluate("document.getElementById('root').click()");
+  }
   await screenshot("desktop.png");
-  await clickNode("f0","یافته");await clickNode("i0","قلم تحلیل");
-  await clickNode("e0","شاهد");await clickNode("s0","منبع");
-  check(await evaluate("document.getElementById('back').click();document.getElementById('detail-kind').textContent==='شاهد'"),"back-navigation");
-  check(await evaluate("document.querySelector('#breadcrumbs button').click();document.getElementById('detail-kind').textContent==='نتیجه'"),"breadcrumb-root");
+  await clickNode("f0","Finding");await clickNode("i0","Observation");
+  await clickNode("e0","Evidence");await clickNode("s0","Source");
+  check(await evaluate("document.getElementById('back').click();document.getElementById('detail-kind').textContent==='Evidence'"),"back-navigation");
+  check(await evaluate("document.querySelector('#breadcrumbs button').click();document.getElementById('detail-kind').textContent==='Insight'"),"breadcrumb-root");
   await evaluate("document.getElementById('scenario').value='1';document.getElementById('scenario').dispatchEvent(new Event('change'))");
-  check(await evaluate("Array.from(document.querySelectorAll('.metric b')).map(n=>n.textContent).join(',')==='۵,۵,۵,۲,۱'"),"five-evidence-counts");
-  await clickNode("f3","یافته");
+  check(await evaluate("Array.from(document.querySelectorAll('.metric b')).map(n=>n.textContent).join(',')==='5,5,5,2,1'"),"five-evidence-counts");
+  await clickNode("f3","Finding");
   check(await evaluate("Array.from(document.querySelectorAll('#references button[data-node^=\"i\"]')).map(n=>n.dataset.node).join(',')==='i3,i4'"),"exact-group-references");
-  await evaluate("document.getElementById('search').value='شاهد';document.getElementById('search').dispatchEvent(new Event('input'))");
+  await evaluate("document.getElementById('search').value='Evidence';document.getElementById('search').dispatchEvent(new Event('input'))");
   check(await evaluate("document.querySelectorAll('#node-list button').length===5"),"evidence-search");
   await evaluate("document.getElementById('search').value='zz-no-match';document.getElementById('search').dispatchEvent(new Event('input'))");
-  check(await evaluate("document.querySelectorAll('#node-list button').length===0 && document.getElementById('node-list').textContent.includes('موردی پیدا نشد')"),"empty-search-state");
+  check(await evaluate("document.querySelectorAll('#node-list button').length===0 && document.getElementById('node-list').textContent.includes('No matches found')"),"empty-search-state");
   await evaluate("document.getElementById('scenario').value='2';document.getElementById('scenario').dispatchEvent(new Event('change'))");
-  await clickNode("f24","یافته");await clickNode("i24","قلم تحلیل");
-  await clickNode("e24","شاهد");await clickNode("s24","منبع");
-  check(await evaluate("document.getElementById('root').click();document.getElementById('detail-kind').textContent==='نتیجه'"),"root-navigation");
+  await clickNode("f24","Finding");await clickNode("i24","Observation");
+  await clickNode("e24","Evidence");await clickNode("s24","Source");
+  check(await evaluate("document.getElementById('root').click();document.getElementById('detail-kind').textContent==='Insight'"),"root-navigation");
   await rpc("Emulation.setDeviceMetricsOverride",{width:390,height:844,deviceScaleFactor:1,mobile:false});
   check(await evaluate("document.documentElement.scrollWidth<=innerWidth+1"),"mobile-no-horizontal-overflow");
   await screenshot("mobile.png");

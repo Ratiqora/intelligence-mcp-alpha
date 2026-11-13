@@ -1,6 +1,6 @@
 # Local synthetic trace viewer
 
-This Persian RTL client example generates 1/5/25-record synthetic graphs through the installed stdio MCP server, validates each graph and writes one standalone HTML file. Open it directly in a local browser. It uses no HTTP server, external assets, AI provider or real-document input. It does not change server APIs, package versions or RawEvidence policy.
+This English-language client example generates 1/5/25-record synthetic graphs through the installed stdio MCP server, validates each graph and writes one standalone HTML file. Open it directly in a local browser. It uses no HTTP server, external assets, AI provider or real-document input. It does not change server APIs, package versions or RawEvidence policy.
 
 The viewer supports scenario selection, insight/finding/item/evidence/source drill-down, breadcrumbs, back/root navigation, search, counts and safe metadata. It is a SAVED synthetic snapshot, not a live server connection, reasoning engine or proof that claims are true. Client attachment binding remains unverified.
 
@@ -32,7 +32,7 @@ The evidence directory receives browser-results.json and desktop/mobile screensh
 
 ## Conflicting upload reports
 
-Add `--conflicting-uploads` to the generation command to include a fourth scenario.
+Add `--conflicting-uploads` to include the upload scenario and open it by default.
 One 12 MB photo fails to upload, another succeeds, and a 2 MB photo succeeds.
 Follow the finding to all three observations. The graph validates the links;
 it does not establish a size limit or prove the cause of the failure.
