@@ -2,7 +2,7 @@
 <html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; form-action 'none'">
 <title>Decision Workbench · Ratiqora</title>
 <style>
 :root{color-scheme:light;--ink:#183853;--muted:#456176;--edge:#cedee8;--soft:#edf6fb;--brand:#116888}
@@ -38,9 +38,10 @@ legend{padding:0 6px;font-weight:700}
 <header>
 <div class="brand">RATIQORA · LOCAL WORKBENCH</div>
 <h1>Build a decision brief</h1>
-<p>Bring your own decision and shareable observations. Link each observation to a reference, then export a Markdown brief.</p>
+<p>Bring your own decision and shareable observations. Link each observation to a listed source, check the references, then download a brief.</p>
 </header>
-<p class="hint" id="privacy">Use fictional or public material only. The page sends nothing and keeps no saved draft. Your entries appear in the downloaded file. You write the finding and decide how each observation relates to it.</p>
+<p class="hint" id="privacy">Use fictional or public material only. Validation runs on your computer and keeps no saved draft. Your entries appear in the downloaded file. You write the finding and decide how each observation relates to it.</p>
+<p class="hint" id="startup" hidden>Start the local workbench with Python and open its local address to validate and export.</p>
 <form id="brief" aria-describedby="privacy" autocomplete="off">
 <section class="card" aria-labelledby="decision-heading">
 <h2 id="decision-heading">1. Define the decision</h2>
@@ -51,7 +52,10 @@ legend{padding:0 6px;font-weight:700}
 </section>
 <section class="card" aria-labelledby="observations-heading">
 <h2 id="observations-heading">2. Link your observations</h2>
-<p class="hint">Add up to 12. Use a public reference or a fictional locator, such as “Public report A, page 2”.</p>
+<p class="hint">Add the references you plan to cite, such as “Public report A, page 2”. Then assign a source to each observation.</p>
+<div id="sources"></div>
+<button type="button" id="add-source">Add source</button>
+<h3>Observations</h3>
 <div id="observations"></div>
 <button type="button" id="add">Add observation</button>
 </section>
@@ -62,29 +66,42 @@ legend{padding:0 6px;font-weight:700}
 <label for="next">What should happen next?</label>
 <textarea id="next" maxlength="700" required></textarea>
 </section>
-<div class="card actions"><button class="primary" type="submit">Generate brief</button></div>
+<div class="card actions"><button class="primary" id="generate" type="submit">Check references &amp; generate brief</button></div>
 </form>
-<p id="status" role="status"></p>
+<p id="status" role="status" tabindex="-1"></p>
 <section class="card" id="preview" aria-labelledby="report-heading" hidden>
 <h2 id="report-heading" tabindex="-1">Markdown preview</h2>
 <pre id="report-text"></pre>
 <button class="primary" id="download" type="button">Download Markdown</button>
 </section>
 </main>
+<template id="source-template">
+<fieldset>
+<legend></legend>
+<div class="fields">
+<label>Source reference <input class="reference" maxlength="240" required></label>
+<label>Type <select class="kind">
+<option value="synthetic_document">Fictional</option>
+<option value="public_document">Public citation</option>
+</select></label>
+</div>
+<button type="button" class="remove">Remove source</button>
+</fieldset>
+</template>
 <template id="observation-template">
 <fieldset>
 <legend></legend>
 <label>Observation
 <textarea class="observation" maxlength="600" required></textarea></label>
 <div class="fields">
-<label>Source reference
-<input class="reference" maxlength="240" required></label>
+<label>Source
+<select class="source" required></select></label>
 <label>Role
 <select class="role" required>
 <option value="">Choose a role</option>
-<option>Supports the finding</option>
-<option>Challenges the finding</option>
-<option>Adds context</option>
+<option value="supports">Supports the finding</option>
+<option value="challenges">Challenges the finding</option>
+<option value="context">Adds context</option>
 </select></label>
 </div>
 <button type="button" class="remove">Remove observation</button>
@@ -95,14 +112,57 @@ legend{padding:0 6px;font-weight:700}
 const get = id => document.getElementById(id);
 const form = get("brief");
 const rows = get("observations");
+const sources = get("sources");
+const token = "__WORKBENCH_TOKEN__";
 const maxRows = 12;
+let nextSource = 1;
+let revision = 0;
 let markdown = "";
 
 function resetPreview() {
+  revision++;
   markdown = "";
   get("preview").hidden = true;
   get("report-text").textContent = "";
   get("status").textContent = "";
+}
+function updateSources() {
+  const activeSources = Array.from(sources.children);
+  get("add-source").disabled = activeSources.length >= maxRows || nextSource > 999999;
+  activeSources.forEach(source => {
+    source.querySelector(".remove").disabled = activeSources.length <= 1;
+  });
+  for (const select of rows.querySelectorAll(".source")) {
+    const selected = select.value;
+    select.replaceChildren(new Option("Choose a source", ""));
+    for (const source of activeSources) {
+      const id = source.dataset.id;
+      const label = source.querySelector(".reference").value.trim();
+      select.add(new Option(label ? id + " — " + label : id, id));
+    }
+    if (selected && !activeSources.some(row => row.dataset.id === selected)) {
+      select.add(new Option(selected + " — source removed; choose another", selected));
+    }
+    select.value = selected;
+  }
+}
+function addSource(focus = true) {
+  if (sources.children.length >= maxRows || nextSource > 999999) return;
+  const row = get("source-template").content.firstElementChild.cloneNode(true);
+  row.dataset.id = "S" + nextSource++;
+  row.querySelector("legend").textContent = "Source " + row.dataset.id;
+  row.querySelector(".remove").setAttribute("aria-label", "Remove source " + row.dataset.id);
+  row.querySelector(".remove").addEventListener("click", () => {
+    row.remove();
+    updateSources();
+    resetPreview();
+    get("add-source").focus();
+  });
+  row.querySelector(".reference").addEventListener("input", updateSources);
+  sources.append(row);
+  updateSources();
+  resetPreview();
+  if (focus) row.querySelector(".reference").focus();
 }
 function renumber() {
   Array.from(rows.children).forEach((row, index) => {
@@ -124,51 +184,57 @@ function addObservation(focus = true) {
     (adjacent?.querySelector(".observation") || get("add")).focus();
   });
   rows.append(row);
+  updateSources();
   renumber();
   resetPreview();
   if (focus) row.querySelector(".observation").focus();
 }
-function plainMarkdown(value) {
-  // Prevent user-supplied Markdown, inline HTML, and table separators.
-  return value.trim().replace(/\s+/gu, " ").replace(/[&<>`*_~\[\]\\|#!]/gu,
-      char => "&#" + char.codePointAt(0) + ";");
-}
-form.addEventListener("input", event => {
-  event.target.setCustomValidity?.("");
-  resetPreview();
-});
+form.addEventListener("input", resetPreview);
 form.addEventListener("change", resetPreview);
 get("add").addEventListener("click", () => addObservation());
-form.addEventListener("submit", event => {
+get("add-source").addEventListener("click", () => addSource());
+form.addEventListener("submit", async event => {
   event.preventDefault();
-  const blank = Array.from(form.querySelectorAll("input,textarea")).find(field => !field.value.trim());
-  if (blank) {
-    blank.setCustomValidity("Enter text, not just spaces.");
-    blank.reportValidity();
-    return;
+  resetPreview();
+  const current = revision;
+  const data = Object.fromEntries(
+    ["question", "finding", "unknowns", "next"].map(id => [id, get(id).value])
+  );
+  data.sources = Array.from(sources.children, row => ({
+    id: row.dataset.id,
+    kind: row.querySelector(".kind").value,
+    reference: row.querySelector(".reference").value,
+  }));
+  data.observations = Array.from(rows.children, row => ({
+    text: row.querySelector(".observation").value,
+    role: row.querySelector(".role").value,
+    source: row.querySelector(".source").value,
+  }));
+  get("status").textContent = "Checking references…";
+  try {
+    const response = await fetch("/brief", {
+      method: "POST",
+      headers: {"Content-Type": "application/json", "X-Workbench-Token": token},
+      body: JSON.stringify(data),
+    });
+    const result = await response.json();
+    if (current !== revision) return;
+    if (!response.ok) {
+      get("status").textContent = result.error;
+      get("status").focus();
+      return;
+    }
+    markdown = result.markdown;
+    get("report-text").textContent = markdown;
+    get("preview").hidden = false;
+    get("status").textContent = "References passed the structure check. Review and download.";
+    get("report-heading").focus();
+  } catch {
+    if (current === revision) {
+      get("status").textContent = "Could not reach the local workbench. Is it still running?";
+      get("status").focus();
+    }
   }
-  const read = field => plainMarkdown(field.value);
-  const report = [
-    "# Decision brief", "",
-    "## Decision question", "", read(get("question")), "",
-    "## Finding", "", read(get("finding")), "",
-    "## Observations and references", "",
-    "| ID | Role | Observation | Source reference |",
-    "| --- | --- | --- | --- |",
-  ];
-  Array.from(rows.children).forEach((row, index) => {
-    const value = klass => read(row.querySelector("." + klass));
-    report.push("| O" + (index + 1) + " | " + value("role") + " | "
-      + value("observation") + " | " + value("reference") + " |");
-  });
-  report.push("", "## What is still unknown", "", read(get("unknowns")), "",
-    "## Next step", "", read(get("next")), "",
-    "Prepared from user-entered observations. Source references and conclusions have not been verified.", "");
-  markdown = report.join("\n");
-  get("report-text").textContent = markdown;
-  get("preview").hidden = false;
-  get("status").textContent = "Brief ready to review and download.";
-  get("report-heading").focus();
 });
 get("download").addEventListener("click", () => {
   if (!markdown) return;
@@ -181,6 +247,12 @@ get("download").addEventListener("click", () => {
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 });
-addObservation(false);
+if (location.protocol === "file:") {
+  form.hidden = true;
+  get("startup").hidden = false;
+} else {
+  addSource(false);
+  addObservation(false);
+}
 </script>
 </html>

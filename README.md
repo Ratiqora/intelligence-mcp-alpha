@@ -22,7 +22,7 @@ The walkthrough’s three-report scenario can be turned into a [one-page decisio
 
 ## Build your own decision brief
 
-Open the [local Decision Workbench](examples/decision_workbench/index.html) by downloading the HTML file and opening it in your browser. Enter a question, your finding, and up to 12 public or fictional observations with source references. Review and download the Markdown brief. The page has no server, storage, or automatic analysis; the author provides the finding and assigns the evidence roles.
+Run the [local Decision Workbench](examples/decision_workbench/README.md) to link your observations to public or fictional source references. Ratiqora checks the internal links before you can download a Markdown brief. You provide the finding and evidence roles.
 
 ## Try it
 
@@ -38,6 +38,6 @@ Alpha 4 is an experimental single-project, in-memory runtime. Use synthetic data
 - **Docs and packaging:** [Test the quickstart on a fresh Windows or Linux environment](https://github.com/Ratiqora/intelligence-mcp-alpha/issues/3) and report the first step that could be clearer.
 - **MCP examples:** [Propose a checkout scenario with conflicting reports](https://github.com/Ratiqora/intelligence-mcp-alpha/issues/4) and show what conclusion the evidence supports.
 
-Use synthetic data and include reproduction steps with a focused PR. Never include real customer data or raw evidence.
+Write UI text, documentation, examples, and test fixtures in English. Use synthetic data and include reproduction steps with a focused PR. Never include real customer data or raw evidence.
 
 This repository is a curated snapshot of the MCP source. The matching Core wheel includes its Python implementation. See [LICENSE](LICENSE), [NOTICE](NOTICE) and [SECURITY.md](SECURITY.md).
