@@ -53,6 +53,15 @@ legend{padding:0 6px;font-weight:700}
 <section class="card" aria-labelledby="observations-heading">
 <h2 id="observations-heading">2. Link your observations</h2>
 <p class="hint">Add the references you plan to cite, such as “Public report A, page 2”. Then assign a source to each observation.</p>
+<details>
+<summary>Import observations from CSV</summary>
+<p class="hint" id="csv-help">Use a UTF-8 CSV with observation, source_reference, source_type,
+and role columns. Use fictional or public for source_type, and supports, challenges, or context for role. Import replaces the source and observation rows and keeps your decision text.</p>
+<label for="csv-file">Observations CSV</label>
+<input type="file" id="csv-file" accept=".csv,text/csv" aria-describedby="csv-help">
+<button type="button" id="import-csv">Replace rows from CSV</button>
+<p id="import-status" role="status"></p>
+</details>
 <div id="sources"></div>
 <button type="button" id="add-source">Add source</button>
 <h3>Observations</h3>
@@ -163,6 +172,7 @@ function addSource(focus = true) {
   updateSources();
   resetPreview();
   if (focus) row.querySelector(".reference").focus();
+  return row;
 }
 function renumber() {
   Array.from(rows.children).forEach((row, index) => {
@@ -188,11 +198,65 @@ function addObservation(focus = true) {
   renumber();
   resetPreview();
   if (focus) row.querySelector(".observation").focus();
+  return row;
 }
 form.addEventListener("input", resetPreview);
 form.addEventListener("change", resetPreview);
 get("add").addEventListener("click", () => addObservation());
 get("add-source").addEventListener("click", () => addSource());
+get("import-csv").addEventListener("click", async () => {
+  const fileInput = get("csv-file");
+  const button = get("import-csv");
+  const status = get("import-status");
+  const file = fileInput.files[0];
+  if (!file || file.size === 0 || file.size > 65536) {
+    status.textContent = "Choose a nonempty UTF-8 CSV file up to 64 KiB.";
+    return;
+  }
+  const current = revision;
+  get("generate").disabled = true;
+  status.textContent = "Checking CSV…";
+  button.disabled = true;
+  try {
+    const response = await fetch("/import-csv", {
+      method: "POST",
+      headers: {"Content-Type": "text/csv", "X-Workbench-Token": token},
+      body: file,
+    });
+    const result = await response.json();
+    if (current !== revision || fileInput.files[0] !== file) {
+      status.textContent = "The draft or selected file changed. Import again to replace the rows.";
+      return;
+    }
+    if (!response.ok) {
+      status.textContent = result.error;
+      return;
+    }
+    sources.replaceChildren();
+    rows.replaceChildren();
+    nextSource = 1;
+    const sourceIds = new Map();
+    for (const source of result.sources) {
+      const row = addSource(false);
+      row.querySelector(".reference").value = source.reference;
+      row.querySelector(".kind").value = source.kind;
+      sourceIds.set(source.id, row.dataset.id);
+    }
+    for (const observation of result.observations) {
+      const row = addObservation(false);
+      row.querySelector(".observation").value = observation.text;
+      row.querySelector(".role").value = observation.role;
+      row.querySelector(".source").value = sourceIds.get(observation.source);
+    }
+    fileInput.value = "";
+    status.textContent = `Imported ${result.observations.length} observations and ${result.sources.length} sources. Review the rows before generating a brief.`;
+  } catch {
+    status.textContent = "Could not import the CSV. Is the local workbench still running?";
+  } finally {
+    button.disabled = false;
+    get("generate").disabled = false;
+  }
+});
 form.addEventListener("submit", async event => {
   event.preventDefault();
   resetPreview();

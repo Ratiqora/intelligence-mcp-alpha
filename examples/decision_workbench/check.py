@@ -123,6 +123,55 @@ class WorkbenchTest(unittest.TestCase):
         )
         self.assertEqual(status, 413)
 
+    def csv_request(self, body, headers=None):
+        if headers is None:
+            headers = {**self.headers, "Content-Type": "text/csv"}
+        status, cache, result = self.request("POST", "/import-csv", body, headers)
+        self.assertEqual(cache, "no-store")
+        return status, json.loads(result)
+
+    def test_import_groups_sources_and_generates_a_validated_brief(self):
+        status, parsed = self.csv_request(
+            b'\xef\xbb\xbfobservation,source_reference,source_type,role\r\n'
+            b'"One upload failed, then retried","Run A, page 2",fictional,supports\r\n'
+            b'"Another upload succeeded\r\non retry","Run A, page 2",fictional,challenges\r\n'
+            b'"The queue was quiet","Run A, page 2",public,context\r\n'
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(len(parsed["sources"]), 2)
+        self.assertEqual([row["source"] for row in parsed["observations"]], ["S1", "S1", "S2"])
+        status, result = self.submit({**self.draft, **parsed})
+        self.assertEqual(status, 200)
+        report = result["markdown"]
+        self.assertIn("Another upload succeeded on retry | S1", report)
+        self.assertIn("S2 (Public citation): Run A, page 2", report)
+        self.assertIn("Should we change the timeout?", report)
+
+    def test_invalid_csv_never_returns_rows_or_echoes_input(self):
+        header = b"observation,source_reference,source_type,role\n"
+        row = b"private-marker,Run A,fictional,supports\n"
+        invalid_cases = [
+            row,
+            header,
+            header + b'"private-marker',
+            header + row + b"Second entry,Run B,fictional,unknown\n",
+            header + row * 13,
+            header + b"\xff,Run A,fictional,context\n",
+        ]
+        for body in invalid_cases:
+            with self.subTest():
+                status, result = self.csv_request(body)
+                self.assertEqual(status, 400)
+                self.assertEqual(result.keys(), {"error"})
+                self.assertNotIn("private-marker", result["error"])
+        self.assertEqual(self.csv_request(header + row, self.headers)[0], 415)
+        self.assertEqual(
+            self.csv_request(
+                header + row, {**self.headers, "Content-Type": "text/csv",
+                               "Origin": "http://example.invalid"}
+            )[0], 403
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
