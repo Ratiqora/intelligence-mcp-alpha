@@ -22,7 +22,7 @@ The walkthrough’s three-report scenario can be turned into a [one-page decisio
 
 ## Build your own decision brief
 
-Open the [local Decision Workbench](examples/decision_workbench/index.html) by downloading the HTML file and opening it in your browser. Enter a question, your finding, and up to 12 public or fictional observations with source references. Review and download the Markdown brief. The page has no server, storage, or automatic analysis; the author provides the finding and assigns the evidence roles.
+Run the [local Decision Workbench](examples/decision_workbench/README.md) to link your observations to public or fictional source references. Ratiqora checks the internal links before you can download a Markdown brief. You provide the finding and evidence roles.
 
 ## Try it
 
