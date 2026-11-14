@@ -33,7 +33,7 @@ class WorkbenchTest(unittest.TestCase):
             "Content-Type": "application/json",
         }
         self.draft = {
-            "question": "آیا باید زمان انتظار را تغییر دهیم؟",
+            "question": "Should we change the timeout?",
             "finding": "Two reports show different outcomes.",
             "unknowns": "Test conditions vary.",
             "next": "Repeat the test under matched conditions.",

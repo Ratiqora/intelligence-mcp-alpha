@@ -38,6 +38,6 @@ Alpha 4 is an experimental single-project, in-memory runtime. Use synthetic data
 - **Docs and packaging:** [Test the quickstart on a fresh Windows or Linux environment](https://github.com/Ratiqora/intelligence-mcp-alpha/issues/3) and report the first step that could be clearer.
 - **MCP examples:** [Propose a checkout scenario with conflicting reports](https://github.com/Ratiqora/intelligence-mcp-alpha/issues/4) and show what conclusion the evidence supports.
 
-Use synthetic data and include reproduction steps with a focused PR. Never include real customer data or raw evidence.
+Write UI text, documentation, examples, and test fixtures in English. Use synthetic data and include reproduction steps with a focused PR. Never include real customer data or raw evidence.
 
 This repository is a curated snapshot of the MCP source. The matching Core wheel includes its Python implementation. See [LICENSE](LICENSE), [NOTICE](NOTICE) and [SECURITY.md](SECURITY.md).
