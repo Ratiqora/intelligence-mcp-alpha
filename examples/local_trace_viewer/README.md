@@ -41,3 +41,18 @@ cause of the failure. After choosing a next step, the walkthrough offers an opti
 Generating the viewer requires the Alpha 4 package pair and Python 3.10 or
 newer with compatible dependencies. After generation, open the HTML in a
 browser; viewing it does not require Python.
+
+## Generate a decision brief
+
+After installing the same Core and MCP wheels, run the report example using the
+installed Python and a path to a new Markdown file in an existing directory:
+
+```sh
+<installed-python> -I <source>/examples/local_trace_viewer/generate.py --decision-brief --output <path>/decision-brief.md
+```
+
+The report follows the validated finding through the three observations to
+their synthetic source references. It explains which reports support a
+concern, which challenge the size-only explanation, and what the team can
+check next. Those classifications are written for this example. The report
+accepts no customer inputs and exports no raw evidence.

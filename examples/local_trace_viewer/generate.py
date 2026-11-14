@@ -1,4 +1,4 @@
-"""Generate a synthetic-only, redacted local trace viewer through installed MCP."""
+"""Generate a synthetic trace viewer or decision brief through installed MCP."""
 
 import argparse
 import asyncio
@@ -196,11 +196,105 @@ async def generate(output: Path, *, uploads: bool = False) -> None:
                       "evidence_counts": [1, 5, 25] + ([3] if uploads else [])}, sort_keys=True))
 
 
+UPLOAD_REPORT_ROLES = (
+    ("Supports the concern", "The failure is worth investigating."),
+    (
+        "Challenges the explanation",
+        "A successful upload at the same size weakens a size-only explanation.",
+    ),
+    ("Adds context", "A smaller upload succeeded; it does not identify a reliable limit."),
+)
+
+
+def render_decision_brief(brief: dict[str, object]) -> str:
+    """Follow the linked, redacted view. Evidence roles are editorial annotations."""
+    nodes = {node["id"]: node for node in brief["nodes"]}
+    insight = nodes[brief["root_id"]]
+    finding_id, = insight["supporting_finding_ids"]
+    finding = nodes[finding_id]
+    observations = [nodes[item_id] for item_id in finding["supporting_item_ids"]]
+    if tuple(item["normalized_content"] for item in observations) != UPLOAD_OBSERVATIONS:
+        raise ValueError("unexpected observations")
+
+    lines = [
+        "# Decision brief: Photo upload limit",
+        "",
+        "Should the team lower the photo upload limit based on these reports?",
+        "",
+        "**Recommendation: Investigate the failure before lowering the limit.**",
+        "",
+        f"**Finding:** {finding['statement']}",
+        "",
+        f"**Trace:** `{insight['id']}` → `{finding_id}` → reports below.",
+        "",
+        "## Reports behind the finding",
+        "",
+        "| Role | Sample report | What it tells us | Trace |",
+        "| --- | --- | --- | --- |",
+    ]
+    source_notes = []
+    for item, (role, note) in zip(observations, UPLOAD_REPORT_ROLES, strict=True):
+        evidence_id, = item["evidence_ids"]
+        evidence = nodes[evidence_id]
+        if evidence_id not in finding["supporting_evidence_ids"]:
+            raise ValueError("evidence not linked to finding")
+        source = nodes[evidence["source_record_id"]]
+        lines.append(
+            f"| {role} | {item['normalized_content']} | {note} | "
+            f"`{item['id']}` → `{evidence_id}` → `{source['id']}` |"
+        )
+        source_notes.append(
+            f"- `{source['id']}` — `{source['external_reference']}`."
+        )
+
+    lines += [
+        "",
+        "## What we still do not know",
+        "",
+        "These reports do not establish the cause of the failure or a safe size limit. "
+        "The file formats, error messages and upload conditions are unknown.",
+        "",
+        f"**Next step:** {insight['statement']}",
+        "",
+        "## Source references",
+        "",
+        *source_notes,
+        "",
+        "Fictional example. The observations and their roles were written for this scenario. "
+        "MCP checks the links and keeps raw evidence out of the report; "
+        "valid links do not establish that a claim is true.",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+async def generate_report(output: Path) -> None:
+    brief = await asyncio.wait_for(
+        scenario(len(UPLOAD_OBSERVATIONS), "Photo uploads", uploads=True),
+        timeout=90,
+    )
+    report = render_decision_brief(brief)
+    with output.open("x", encoding="utf-8") as stream:
+        stream.write(report)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--conflicting-uploads", action="store_true")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--conflicting-uploads", action="store_true")
+    mode.add_argument("--decision-brief", action="store_true", help="Write a Markdown brief")
     arguments = parser.parse_args()
+    if arguments.decision_brief:
+        try:
+            asyncio.run(generate_report(arguments.output))
+        except FileExistsError:
+            print("PILOT_REPORT=FAIL output already exists", file=sys.stderr)
+            return 1
+        except Exception:  # noqa: BLE001
+            print("PILOT_REPORT=FAIL output_suppressed=true", file=sys.stderr)
+            return 1
+        print("PILOT_REPORT=PASS synthetic_only=true")
+        return 0
     try:
         asyncio.run(generate(arguments.output, uploads=arguments.conflicting_uploads))
     except Exception:  # noqa: BLE001
