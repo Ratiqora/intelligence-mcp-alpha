@@ -36,7 +36,7 @@ Add `--conflicting-uploads` to start with a guided walkthrough. Compare the
 three reports and choose whether to lower the size limit or investigate first.
 Select **Explore the evidence trail** to open the graph and follow its references.
 The graph validates the links; it does not establish a size limit or prove the
-cause of the failure.
+cause of the failure. After choosing a next step, the walkthrough offers an optional link to a public GitHub issue draft. Opening the demo sends no responses; posting is a separate action on GitHub.
 
 Generating the viewer requires the Alpha 4 package pair and Python 3.10 or
 newer with compatible dependencies. After generation, open the HTML in a

@@ -48,6 +48,10 @@ details{border-top:1px solid var(--line);padding-top:16px;margin-top:24px}summar
 .report-cards strong{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
 #guide-feedback p{margin:6px 0}#guide-feedback strong{display:block}
 .trace-return{margin-bottom:18px}
+#guide-share-feedback{margin-top:20px;border-top:1px solid var(--line);padding-top:8px}
+#guide-feedback-link{display:inline-block;text-decoration:none}
+#guide-feedback-link:hover{text-decoration:underline}
+#guide-feedback-link:focus-visible{outline:3px solid #dfaf3e;outline-offset:3px}
 @media(max-width:680px){.report-cards{grid-template-columns:1fr}.guide-choices{flex-direction:column}.guide-choice{width:100%}}
 </style>
 </head>
@@ -69,6 +73,11 @@ details{border-top:1px solid var(--line);padding-top:16px;margin-top:24px}summar
       <button id="guide-investigate" class="guide-choice" type="button" aria-pressed="false">Investigate the failure first</button>
     </div>
     <div id="guide-feedback" class="notice" role="status" hidden></div>
+    <aside id="guide-share-feedback" hidden>
+      <p>What was clear, and where did you get stuck?</p>
+      <p><a id="guide-feedback-link" class="guide-secondary" href="https://github.com/Ratiqora/intelligence-mcp-alpha/issues/new?title=Alpha+4+demo+feedback&amp;body=What+did+you+think+the+demo+was+asking+you+to+do+when+it+first+opened%3F%0A%0AWhat+product+decision%2C+if+any%2C+did+it+help+you+make%3F%0A%0AWhere%2C+if+anywhere%2C+did+you+get+stuck%3F%0A%0APlease+leave+out+personal+information+and+real+customer+data.%0A" target="_blank" rel="noopener noreferrer">Share demo feedback on GitHub</a></p>
+      <p class="small">Opens a public issue draft in a new tab. GitHub sign-in is required to post.</p>
+    </aside>
     <p><button id="guide-explore" class="guide-secondary" type="button">Explore the evidence trail</button></p>
   </section>
   <footer>All reports are fictional. This demo runs offline and does not analyze your files.</footer>
@@ -160,6 +169,7 @@ if(dataset.id==="conflicting-uploads"){
    $("guide-lower").setAttribute("aria-pressed",String(!investigate));
    $("guide-investigate").setAttribute("aria-pressed",String(investigate));
    $("guide-feedback").hidden=false;
+   $("guide-share-feedback").hidden=false;
    $("guide-feedback").replaceChildren(
     element("strong",investigate?"Investigate first.":"There isn’t enough evidence to lower the limit."),
     element("p","One 12 MB photo failed and another succeeded. The reports don’t show what caused the failure or rule out size as a factor."),

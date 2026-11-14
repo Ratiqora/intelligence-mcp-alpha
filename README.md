@@ -28,6 +28,7 @@ Alpha 4 is an experimental single-project, in-memory runtime. Use synthetic data
 
 ## Contribute
 
+- **Demo feedback:** [Tell us what was clear and where you got stuck](https://github.com/Ratiqora/intelligence-mcp-alpha/issues/new?title=Alpha+4+demo+feedback&body=What+did+you+think+the+demo+was+asking+you+to+do+when+it+first+opened%3F%0A%0AWhat+product+decision%2C+if+any%2C+did+it+help+you+make%3F%0A%0AWhere%2C+if+anywhere%2C+did+you+get+stuck%3F%0A%0APlease+leave+out+personal+information+and+real+customer+data.%0A). This opens a public GitHub issue draft.
 - **Docs and packaging:** [Test the quickstart on a fresh Windows or Linux environment](https://github.com/Ratiqora/intelligence-mcp-alpha/issues/3) and report the first step that could be clearer.
 - **MCP examples:** [Propose a checkout scenario with conflicting reports](https://github.com/Ratiqora/intelligence-mcp-alpha/issues/4) and show what conclusion the evidence supports.
 
