@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>Decision Workbench · Ratiqora</title>
+<style>
+:root{color-scheme:light;--ink:#183853;--muted:#456176;--edge:#cedee8;--soft:#edf6fb;--brand:#116888}
+*{box-sizing:border-box}
+body{margin:0;background:#f5f8fb;color:var(--ink);font:16px/1.55 system-ui,sans-serif}
+main{max-width:1040px;margin:auto;padding:clamp(16px,4vw,42px)}
+header{background:var(--ink);color:white;padding:clamp(20px,5vw,38px);border-radius:20px;margin-bottom:20px}
+.brand{font-size:.8rem;letter-spacing:.13em;font-weight:750;color:#bee8fb}
+h1{font-size:clamp(1.8rem,4.5vw,3rem);line-height:1.15;margin:.35em 0}
+h2{font-size:1.25rem;margin:0 0 8px}
+p{margin:.45em 0 1em}header p{max-width:62ch;margin-bottom:0;color:#e1eff8}
+.card{background:#fff;border:1px solid var(--edge);border-radius:16px;padding:clamp(14px,3vw,24px);margin-top:14px}
+.hint{color:var(--muted);font-size:.9rem}
+label{display:block;font-weight:650;margin:11px 0 3px}
+input,textarea,select,button{font:inherit}
+input,textarea,select{width:100%;min-width:0;color:var(--ink);border:1px solid #90a9ba;border-radius:8px;background:white;padding:8px 10px}
+textarea{min-height:76px;resize:vertical}
+button{cursor:pointer;border:1px solid var(--brand);background:white;color:var(--brand);border-radius:9px;padding:8px 13px;font-weight:680}
+.primary{background:var(--brand);color:white}
+button:disabled{opacity:.58;cursor:default}
+:focus-visible{outline:3px solid #b9641f;outline-offset:3px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+fieldset{min-width:0;margin:12px 0;padding:10px 14px 14px;border:1px solid var(--edge);border-radius:10px}
+legend{padding:0 6px;font-weight:700}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.remove{margin-top:12px}
+#report-text{white-space:pre-wrap;overflow-wrap:anywhere;margin:0 0 14px;padding:14px;background:var(--soft);border-radius:8px}
+#status{min-height:1.55em;margin:.5em 0;color:var(--muted)}
+[hidden]{display:none!important}
+@media(max-width:560px){.fields{grid-template-columns:1fr;gap:0}}
+</style>
+<main>
+<header>
+<div class="brand">RATIQORA · LOCAL WORKBENCH</div>
+<h1>Build a decision brief</h1>
+<p>Bring your own decision and shareable observations. Link each observation to a reference, then export a Markdown brief.</p>
+</header>
+<p class="hint" id="privacy">Use fictional or public material only. The page sends nothing and keeps no saved draft. Your entries appear in the downloaded file. You write the finding and decide how each observation relates to it.</p>
+<form id="brief" aria-describedby="privacy" autocomplete="off">
+<section class="card" aria-labelledby="decision-heading">
+<h2 id="decision-heading">1. Define the decision</h2>
+<label for="question">Decision question</label>
+<input id="question" maxlength="240" required placeholder="What should the team decide?">
+<label for="finding">Your finding</label>
+<textarea id="finding" maxlength="700" required placeholder="What do the observations suggest?"></textarea>
+</section>
+<section class="card" aria-labelledby="observations-heading">
+<h2 id="observations-heading">2. Link your observations</h2>
+<p class="hint">Add up to 12. Use a public reference or a fictional locator, such as “Public report A, page 2”.</p>
+<div id="observations"></div>
+<button type="button" id="add">Add observation</button>
+</section>
+<section class="card" aria-labelledby="action-heading">
+<h2 id="action-heading">3. Set the next step</h2>
+<label for="unknowns">What is still unknown?</label>
+<textarea id="unknowns" maxlength="700" required></textarea>
+<label for="next">What should happen next?</label>
+<textarea id="next" maxlength="700" required></textarea>
+</section>
+<div class="card actions"><button class="primary" type="submit">Generate brief</button></div>
+</form>
+<p id="status" role="status"></p>
+<section class="card" id="preview" aria-labelledby="report-heading" hidden>
+<h2 id="report-heading" tabindex="-1">Markdown preview</h2>
+<pre id="report-text"></pre>
+<button class="primary" id="download" type="button">Download Markdown</button>
+</section>
+</main>
+<template id="observation-template">
+<fieldset>
+<legend></legend>
+<label>Observation
+<textarea class="observation" maxlength="600" required></textarea></label>
+<div class="fields">
+<label>Source reference
+<input class="reference" maxlength="240" required></label>
+<label>Role
+<select class="role" required>
+<option value="">Choose a role</option>
+<option>Supports the finding</option>
+<option>Challenges the finding</option>
+<option>Adds context</option>
+</select></label>
+</div>
+<button type="button" class="remove">Remove observation</button>
+</fieldset>
+</template>
+<script>
+"use strict";
+const get = id => document.getElementById(id);
+const form = get("brief");
+const rows = get("observations");
+const maxRows = 12;
+let markdown = "";
+
+function resetPreview() {
+  markdown = "";
+  get("preview").hidden = true;
+  get("report-text").textContent = "";
+  get("status").textContent = "";
+}
+function renumber() {
+  Array.from(rows.children).forEach((row, index) => {
+    row.querySelector("legend").textContent = "Observation " + (index + 1);
+    const remove = row.querySelector(".remove");
+    remove.disabled = rows.children.length <= 1;
+    remove.setAttribute("aria-label", "Remove observation " + (index + 1));
+  });
+  get("add").disabled = rows.children.length >= maxRows;
+}
+function addObservation(focus = true) {
+  if (rows.children.length >= maxRows) return;
+  const row = get("observation-template").content.firstElementChild.cloneNode(true);
+  row.querySelector(".remove").addEventListener("click", () => {
+    const adjacent = row.nextElementSibling || row.previousElementSibling;
+    row.remove();
+    renumber();
+    resetPreview();
+    (adjacent?.querySelector(".observation") || get("add")).focus();
+  });
+  rows.append(row);
+  renumber();
+  resetPreview();
+  if (focus) row.querySelector(".observation").focus();
+}
+function plainMarkdown(value) {
+  // Prevent user-supplied Markdown, inline HTML, and table separators.
+  return value.trim().replace(/\s+/gu, " ").replace(/[&<>`*_~\[\]\\|#!]/gu,
+      char => "&#" + char.codePointAt(0) + ";");
+}
+form.addEventListener("input", event => {
+  event.target.setCustomValidity?.("");
+  resetPreview();
+});
+form.addEventListener("change", resetPreview);
+get("add").addEventListener("click", () => addObservation());
+form.addEventListener("submit", event => {
+  event.preventDefault();
+  const blank = Array.from(form.querySelectorAll("input,textarea")).find(field => !field.value.trim());
+  if (blank) {
+    blank.setCustomValidity("Enter text, not just spaces.");
+    blank.reportValidity();
+    return;
+  }
+  const read = field => plainMarkdown(field.value);
+  const report = [
+    "# Decision brief", "",
+    "## Decision question", "", read(get("question")), "",
+    "## Finding", "", read(get("finding")), "",
+    "## Observations and references", "",
+    "| ID | Role | Observation | Source reference |",
+    "| --- | --- | --- | --- |",
+  ];
+  Array.from(rows.children).forEach((row, index) => {
+    const value = klass => read(row.querySelector("." + klass));
+    report.push("| O" + (index + 1) + " | " + value("role") + " | "
+      + value("observation") + " | " + value("reference") + " |");
+  });
+  report.push("", "## What is still unknown", "", read(get("unknowns")), "",
+    "## Next step", "", read(get("next")), "",
+    "Prepared from user-entered observations. Source references and conclusions have not been verified.", "");
+  markdown = report.join("\n");
+  get("report-text").textContent = markdown;
+  get("preview").hidden = false;
+  get("status").textContent = "Brief ready to review and download.";
+  get("report-heading").focus();
+});
+get("download").addEventListener("click", () => {
+  if (!markdown) return;
+  const url = URL.createObjectURL(new Blob([markdown], {type:"text/markdown;charset=utf-8"}));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "ratiqora-decision-brief.md";
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+addObservation(false);
+</script>
+</html>

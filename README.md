@@ -20,6 +20,10 @@ This table is an illustrative scenario. The packaged trial builds its own synthe
 
 The walkthrough’s three-report scenario can be turned into a [one-page decision brief](examples/local_trace_viewer/README.md#generate-a-decision-brief) with supporting and conflicting reports, open questions, and a next step.
 
+## Build your own decision brief
+
+Open the [local Decision Workbench](examples/decision_workbench/index.html) by downloading the HTML file and opening it in your browser. Enter a question, your finding, and up to 12 public or fictional observations with source references. Review and download the Markdown brief. The page has no server, storage, or automatic analysis; the author provides the finding and assigns the evidence roles.
+
 ## Try it
 
 1. Download the two wheels, constraints and checksum file from [Alpha 4](https://github.com/Ratiqora/intelligence-mcp-alpha/releases/tag/v0.1.0-alpha.4).
