@@ -21,3 +21,21 @@ summaries and source references with no separate raw evidence payload or integri
 
 Use public or fictional material. The workbench listens only on your machine. It creates no saved
 drafts and does not fetch sources. Your entries are included in the Markdown file you download.
+
+## Import multiple observations
+
+In **Link your observations**, open **Import observations from CSV** and click
+**Replace rows from CSV** after selecting your file. Use UTF-8 with the columns
+below, up to 12 observations and 64 KiB. Quote fields containing commas, quotes,
+or newlines. The import reuses identical source references of the same type.
+
+```csv
+observation,source_reference,source_type,role
+"Upload failed at 12 MB","Fictional report A, page 2",fictional,supports
+"Upload worked at 12 MB","Fictional report B, page 1",fictional,challenges
+```
+
+Use `fictional` or `public` as the source type, and `supports`, `challenges`,
+or `context` as the role. A valid import replaces the source and observation
+rows, leaving the decision text in place. A rejected import leaves the draft
+untouched. Imports run locally; the workbench does not fetch the cited sources.

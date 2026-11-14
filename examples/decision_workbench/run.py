@@ -1,6 +1,8 @@
 """Serve the decision workbench on loopback and validate before rendering Markdown."""
 
 import argparse
+import csv
+import io
 import json
 import re
 import secrets
@@ -31,6 +33,9 @@ ROLES = {
     "context": "Adds context",
 }
 
+CSV_HEADER = ["observation", "source_reference", "source_type", "role"]
+CSV_SOURCE_KINDS = {"fictional": "synthetic_document", "public": "public_document"}
+
 
 class BriefError(ValueError):
     """Messages contain field names and row numbers, never user values."""
@@ -60,6 +65,41 @@ def rows(value, name):
 def plain(value):
     text = " ".join(value.split())
     return re.sub(r"[&<>`*_~\[\]\\|#!:+.=-]", lambda m: f"&#{ord(m[0])};", text)
+
+
+def parse_observations_csv(body):
+    """Read an entire bounded CSV before allowing it to replace the form rows."""
+    reader = csv.reader(io.StringIO(body.decode("utf-8-sig"), newline=""), strict=True)
+    sources = {}
+    observations = []
+    try:
+        if next(reader, None) != CSV_HEADER:
+            raise BriefError("The CSV header must be observation,source_reference,source_type,role.")
+        for record, row in enumerate(reader, 1):
+            if record > 12:
+                raise BriefError("The CSV can contain at most 12 observations.")
+            if len(row) != len(CSV_HEADER):
+                raise BriefError(f"CSV record {record} must contain exactly four columns.")
+            text, reference, kind, role = row
+            text = field(text, f"Observation in CSV record {record}", 600)
+            reference = field(reference, f"Source reference in CSV record {record}", 240)
+            if kind not in CSV_SOURCE_KINDS:
+                raise BriefError(f"Use fictional or public in CSV record {record}.")
+            if role not in ROLES:
+                raise BriefError(f"Use supports, challenges, or context in CSV record {record}.")
+            key = (reference, kind)
+            if key not in sources:
+                sources[key] = {
+                    "id": f"S{len(sources) + 1}",
+                    "kind": CSV_SOURCE_KINDS[kind],
+                    "reference": reference,
+                }
+            observations.append({"text": text, "role": role, "source": sources[key]["id"]})
+    except csv.Error:
+        raise BriefError("The CSV contains malformed fields or quotes.") from None
+    if not observations:
+        raise BriefError("The CSV must contain at least one observation.")
+    return {"sources": list(sources.values()), "observations": observations}
 
 
 def build_brief(data):
@@ -183,7 +223,7 @@ def handler(page, token, port):
 
         def do_POST(self):
             if (
-                self.path != "/brief"
+                self.path not in ("/brief", "/import-csv")
                 or self.headers.get("Host") != host
                 or self.headers.get("Origin") != origin
                 or not compare_digest(
@@ -192,24 +232,30 @@ def handler(page, token, port):
             ):
                 self.send_json(403, {"error": "Open the workbench from its local address."})
                 return
-            if self.headers.get_content_type() != "application/json":
-                self.send_json(415, {"error": "Expected JSON."})
+            importing = self.path == "/import-csv"
+            content_type = "text/csv" if importing else "application/json"
+            if self.headers.get_content_type() != content_type:
+                self.send_json(415, {"error": f"Expected {content_type}."})
                 return
             length = self.headers.get("Content-Length", "")
             if not re.fullmatch(r"[0-9]{1,6}", length) or not 0 < int(length) <= MAX_BODY:
-                self.send_json(413, {"error": "The brief is missing or too large."})
+                self.send_json(413, {"error": "The request is empty or exceeds 64 KiB."})
                 return
             try:
                 body = self.rfile.read(int(length))
                 if len(body) != int(length):
-                    raise BriefError("The brief is incomplete.")
-                report = build_brief(json.loads(body.decode("utf-8")))
+                    raise BriefError("The request is incomplete.")
+                result = (
+                    parse_observations_csv(body) if importing
+                    else {"markdown": build_brief(json.loads(body.decode("utf-8")))}
+                )
             except BriefError as error:
                 self.send_json(400, {"error": str(error)})
             except (ValueError, RecursionError):
-                self.send_json(400, {"error": "The brief contains invalid input."})
+                message = "The CSV must use valid UTF-8." if importing else "Invalid brief input."
+                self.send_json(400, {"error": message})
             else:
-                self.send_json(200, {"markdown": report})
+                self.send_json(200, result)
 
     return WorkbenchHandler
 
