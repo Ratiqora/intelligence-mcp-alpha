@@ -18,6 +18,8 @@ Three customers reported failed uploads for photos above 10 MB. Another uploaded
 
 This table is an illustrative scenario. The packaged trial builds its own synthetic graph. A valid graph has intact references; it does not prove the conclusion or authenticate a source.
 
+The walkthrough’s three-report scenario can be turned into a [one-page decision brief](examples/local_trace_viewer/README.md#generate-a-decision-brief) with supporting and conflicting reports, open questions, and a next step.
+
 ## Try it
 
 1. Download the two wheels, constraints and checksum file from [Alpha 4](https://github.com/Ratiqora/intelligence-mcp-alpha/releases/tag/v0.1.0-alpha.4).
