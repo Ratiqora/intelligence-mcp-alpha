@@ -7,6 +7,7 @@ import json
 import os
 import secrets
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from threading import Thread
 
@@ -62,16 +63,89 @@ def render_html(scenarios: list[dict[str, object]], template: str) -> str:
     return template.replace("__TRACE_DATA__", data)
 
 
-UPLOAD_OBSERVATIONS = (
-    "Uploading a 12 MB photo failed.",
-    "Uploading another 12 MB photo succeeded.",
-    "Uploading a 2 MB photo succeeded.",
+@dataclass(frozen=True)
+class DecisionCase:
+    id: str
+    label: str
+    title: str
+    question: str
+    recommendation: str
+    observations: tuple[str, ...]
+    finding: str
+    next_step: str
+    unknowns: str
+    roles: tuple[tuple[str, str], ...]
+    source_prefix: str = "synthetic://trace-viewer"
+
+
+UPLOADS = DecisionCase(
+    id="conflicting-uploads",
+    label="Photo uploads · conflicting reports",
+    title="Photo upload limit",
+    question="Should the team lower the photo upload limit based on these reports?",
+    recommendation="Investigate the failure before lowering the limit.",
+    observations=(
+        "Uploading a 12 MB photo failed.",
+        "Uploading another 12 MB photo succeeded.",
+        "Uploading a 2 MB photo succeeded.",
+    ),
+    finding="Two photos of the same size had different outcomes. The cause of the failure is still unknown.",
+    next_step="Before changing the upload size limit, compare file formats and error messages under the same conditions.",
+    unknowns=(
+        "These reports do not establish the cause of the failure or a safe size limit. "
+        "The file formats, error messages and upload conditions are unknown."
+    ),
+    roles=(
+        ("Supports the concern", "The failure is worth investigating."),
+        (
+            "Challenges the explanation",
+            "A successful upload at the same size weakens a size-only explanation.",
+        ),
+        ("Adds context", "A smaller upload succeeded; it does not identify a reliable limit."),
+    ),
 )
-UPLOAD_FINDING = "Two photos of the same size had different outcomes. The cause of the failure is still unknown."
-UPLOAD_INSIGHT = "Before changing the upload size limit, compare file formats and error messages under the same conditions."
+
+CHECKOUT = DecisionCase(
+    id="conflicting-checkout",
+    source_prefix="synthetic://trace-viewer/checkout",
+    label="Checkout · conflicting reports",
+    title="Checkout payment failure",
+    question="Should the team disable checkout for this browser based on these reports?",
+    recommendation="Investigate the failed payment before restricting browser access.",
+    observations=(
+        "A shopper using Chrome 145 on Windows saw a payment error at checkout.",
+        "Another shopper using Chrome 145 on Windows completed checkout.",
+    ),
+    finding=(
+        "Shoppers on the same browser version and operating system reported different outcomes. "
+        "The cause of the payment error is unknown."
+    ),
+    next_step=(
+        "In a test environment, retry with the same browser version, cart and payment method "
+        "and compare the payment error codes."
+    ),
+    unknowns=(
+        "We do not know the payment methods, carts, error codes, or checkout conditions. "
+        "These two reports cannot establish a browser-specific failure or its frequency."
+    ),
+    roles=(
+        ("Supports the concern", "The reported error warrants a closer look."),
+        (
+            "Challenges the explanation",
+            "A successful checkout on the same browser and OS weakens a browser-only explanation.",
+        ),
+    ),
+)
+
+CASES = {"uploads": UPLOADS, "checkout": CHECKOUT}
 
 
-async def scenario(count: int, label: str, *, uploads: bool = False) -> dict[str, object]:
+async def scenario(
+    count: int, label: str, *, case: DecisionCase | None = None,
+) -> dict[str, object]:
+    if case and count != len(case.observations):
+        raise ValueError("unexpected synthetic case size")
+    source_prefix = case.source_prefix if case else "synthetic://trace-viewer"
     payloads: list[str] = []
     nodes: list[dict[str, object]] = []
     captured: list[str] = []
@@ -118,7 +192,7 @@ async def scenario(count: int, label: str, *, uploads: bool = False) -> dict[str
                     await call("register_source", {
                         "source_id": f"s{index}", "source_kind": "synthetic_document",
                         "source_instance": "local-trace-viewer",
-                        "external_reference": f"synthetic://trace-viewer/{index}",
+                        "external_reference": f"{source_prefix}/{index}",
                         "collected_at": "2026-10-24T12:00:00+00:00",
                     })
                     payload = "synthetic-" + secrets.token_hex(32)
@@ -133,7 +207,7 @@ async def scenario(count: int, label: str, *, uploads: bool = False) -> dict[str
                     await call("register_item", {
                         "item_id": f"i{index}",
                         "normalized_content": (
-                            UPLOAD_OBSERVATIONS[index] if uploads
+                            case.observations[index] if case
                             else "This observation was written for the demo."
                         ),
                         "evidence_ids": [f"e{index}"],
@@ -144,7 +218,7 @@ async def scenario(count: int, label: str, *, uploads: bool = False) -> dict[str
                     await call("register_finding", {
                         "finding_id": f"f{start}",
                         "statement": (
-                            UPLOAD_FINDING if uploads
+                            case.finding if case
                             else "This sample finding links to the observations and evidence below."
                         ),
                         "supporting_item_ids": [f"i{i}" for i in range(
@@ -155,7 +229,7 @@ async def scenario(count: int, label: str, *, uploads: bool = False) -> dict[str
                 await call("register_insight", {
                     "insight_id": "result",
                     "statement": (
-                        UPLOAD_INSIGHT if uploads
+                        case.next_step if case
                         else "This sample insight shows how to follow the evidence trail."
                     ),
                     "supporting_finding_ids": findings,
@@ -172,20 +246,20 @@ async def scenario(count: int, label: str, *, uploads: bool = False) -> dict[str
         raise ValueError("stderr capture did not terminate")
     check_private("".join(captured))
     result = {"label": label, "counts": expected, "root_id": "result", "nodes": nodes}
-    if uploads:
-        result["id"] = "conflicting-uploads"
+    if case:
+        result["id"] = case.id
     check_private(json.dumps(result, ensure_ascii=False))
     return result
 
 
-async def generate(output: Path, *, uploads: bool = False) -> None:
+async def generate(output: Path, *, case: DecisionCase | None = None) -> None:
     scenarios = []
     for count, label in ((1, "Small · 1 evidence record"), (5, "Medium · 5 evidence records"),
                          (25, "Large · 25 evidence records")):
         scenarios.append(await asyncio.wait_for(scenario(count, label), timeout=90))
-    if uploads:
+    if case:
         scenarios.append(await asyncio.wait_for(
-            scenario(3, "Photo uploads · conflicting reports", uploads=True), timeout=90,
+            scenario(len(case.observations), case.label, case=case), timeout=90,
         ))
     template = Path(__file__).with_name("viewer.template.html").read_text(encoding="utf-8")
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -193,35 +267,25 @@ async def generate(output: Path, *, uploads: bool = False) -> None:
         raise ValueError("output already exists; do not overwrite")
     output.write_text(render_html(scenarios, template), encoding="utf-8")
     print(json.dumps({"viewer": "PASS", "synthetic_only": True, "scenarios": len(scenarios),
-                      "evidence_counts": [1, 5, 25] + ([3] if uploads else [])}, sort_keys=True))
+                      "evidence_counts": [1, 5, 25] + ([len(case.observations)] if case else [])}, sort_keys=True))
 
 
-UPLOAD_REPORT_ROLES = (
-    ("Supports the concern", "The failure is worth investigating."),
-    (
-        "Challenges the explanation",
-        "A successful upload at the same size weakens a size-only explanation.",
-    ),
-    ("Adds context", "A smaller upload succeeded; it does not identify a reliable limit."),
-)
-
-
-def render_decision_brief(brief: dict[str, object]) -> str:
+def render_decision_brief(brief: dict[str, object], case: DecisionCase) -> str:
     """Follow the linked, redacted view. Evidence roles are editorial annotations."""
     nodes = {node["id"]: node for node in brief["nodes"]}
     insight = nodes[brief["root_id"]]
     finding_id, = insight["supporting_finding_ids"]
     finding = nodes[finding_id]
     observations = [nodes[item_id] for item_id in finding["supporting_item_ids"]]
-    if tuple(item["normalized_content"] for item in observations) != UPLOAD_OBSERVATIONS:
+    if tuple(item["normalized_content"] for item in observations) != case.observations:
         raise ValueError("unexpected observations")
 
     lines = [
-        "# Decision brief: Photo upload limit",
+        f"# Decision brief: {case.title}",
         "",
-        "Should the team lower the photo upload limit based on these reports?",
+        case.question,
         "",
-        "**Recommendation: Investigate the failure before lowering the limit.**",
+        f"**Recommendation: {case.recommendation}**",
         "",
         f"**Finding:** {finding['statement']}",
         "",
@@ -233,7 +297,7 @@ def render_decision_brief(brief: dict[str, object]) -> str:
         "| --- | --- | --- | --- |",
     ]
     source_notes = []
-    for item, (role, note) in zip(observations, UPLOAD_REPORT_ROLES, strict=True):
+    for item, (role, note) in zip(observations, case.roles, strict=True):
         evidence_id, = item["evidence_ids"]
         evidence = nodes[evidence_id]
         if evidence_id not in finding["supporting_evidence_ids"]:
@@ -251,8 +315,7 @@ def render_decision_brief(brief: dict[str, object]) -> str:
         "",
         "## What we still do not know",
         "",
-        "These reports do not establish the cause of the failure or a safe size limit. "
-        "The file formats, error messages and upload conditions are unknown.",
+        case.unknowns,
         "",
         f"**Next step:** {insight['statement']}",
         "",
@@ -267,12 +330,12 @@ def render_decision_brief(brief: dict[str, object]) -> str:
     return "\n".join(lines) + "\n"
 
 
-async def generate_report(output: Path) -> None:
+async def generate_report(output: Path, case: DecisionCase) -> None:
     brief = await asyncio.wait_for(
-        scenario(len(UPLOAD_OBSERVATIONS), "Photo uploads", uploads=True),
+        scenario(len(case.observations), case.label, case=case),
         timeout=90,
     )
-    report = render_decision_brief(brief)
+    report = render_decision_brief(brief, case)
     with output.open("x", encoding="utf-8") as stream:
         stream.write(report)
 
@@ -282,11 +345,15 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--conflicting-uploads", action="store_true")
-    mode.add_argument("--decision-brief", action="store_true", help="Write a Markdown brief")
+    mode.add_argument("--conflicting-checkout", action="store_true")
+    mode.add_argument(
+        "--decision-brief", nargs="?", choices=tuple(CASES), const="uploads",
+        help="Write a Markdown brief for a synthetic scenario (default: uploads)",
+    )
     arguments = parser.parse_args()
     if arguments.decision_brief:
         try:
-            asyncio.run(generate_report(arguments.output))
+            asyncio.run(generate_report(arguments.output, CASES[arguments.decision_brief]))
         except FileExistsError:
             print("PILOT_REPORT=FAIL output already exists", file=sys.stderr)
             return 1
@@ -296,7 +363,10 @@ def main() -> int:
         print("PILOT_REPORT=PASS synthetic_only=true")
         return 0
     try:
-        asyncio.run(generate(arguments.output, uploads=arguments.conflicting_uploads))
+        case = UPLOADS if arguments.conflicting_uploads else None
+        if arguments.conflicting_checkout:
+            case = CHECKOUT
+        asyncio.run(generate(arguments.output, case=case))
     except Exception:  # noqa: BLE001
         print("TRACE_VIEWER=FAIL output_suppressed=true", file=sys.stderr)
         return 1

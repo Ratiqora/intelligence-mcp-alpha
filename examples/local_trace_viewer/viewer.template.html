@@ -144,7 +144,7 @@ $("scenario").addEventListener("change",()=>selectScenario(Number($("scenario").
 $("search").addEventListener("input",renderList);
 $("back").addEventListener("click",()=>{if(trail.length>1){trail.pop();render();}});
 $("root").addEventListener("click",()=>{trail=[dataset.root_id];render();});
-const initialIndex=Math.max(0,datasets.findIndex(d=>d.id==="conflicting-uploads"));
+const initialIndex=Math.max(0,datasets.findIndex(d=>d.id==="conflicting-uploads"||d.id==="conflicting-checkout"));
 $("scenario").value=String(initialIndex);
 selectScenario(initialIndex);
 

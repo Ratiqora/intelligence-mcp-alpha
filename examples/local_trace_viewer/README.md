@@ -56,3 +56,18 @@ their synthetic source references. It explains which reports support a
 concern, which challenge the size-only explanation, and what the team can
 check next. Those classifications are written for this example. The report
 accepts no customer inputs and exports no raw evidence.
+
+## Checkout payment failure
+
+Use `--decision-brief checkout` to generate the same Markdown format for two
+fictional checkout reports. One shopper sees a payment error and another
+completes checkout using the same browser version and operating system.
+The brief keeps the cause open and recommends a controlled checkout test.
+
+```sh
+<installed-python> -I <source>/examples/local_trace_viewer/generate.py --decision-brief checkout --output <path>/checkout-brief.md
+```
+
+To explore both evidence paths in a browser, use `--conflicting-checkout`
+instead of `--decision-brief checkout` and give the output an `.html` extension.
+This opens the checkout case in the technical viewer.

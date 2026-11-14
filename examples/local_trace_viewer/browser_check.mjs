@@ -112,6 +112,21 @@ try{
   }else{
     check(await evaluate("document.getElementById('technical-view').checkVisibility() && !document.getElementById('guided-demo').checkVisibility()"),"technical-view-without-upload-scenario");
   }
+  const checkoutScenario = await evaluate("JSON.parse(document.getElementById('trace-data').textContent).some(d=>d.id==='conflicting-checkout')");
+  if(checkoutScenario){
+    check(await evaluate("document.getElementById('scenario').selectedOptions[0].textContent==='Checkout · conflicting reports'"),"checkout-opens-first");
+    await clickNode("f0","Finding");
+    check(await evaluate("document.querySelectorAll('#references button[data-node^=i]').length===2 && document.querySelector('#detail-description').textContent.includes('cause of the payment error is unknown')"),"checkout-finding-links-both-reports");
+    for(const [index,phrase] of [[0,"saw a payment error"],[1,"completed checkout"]]){
+      await clickNode("i"+index,"Observation");
+      check(await evaluate("document.querySelector('#detail-description').textContent.includes("+JSON.stringify(phrase)+")"),"checkout-report-"+index);
+      await clickNode("e"+index,"Evidence");
+      await clickNode("s"+index,"Source");
+      check(await evaluate("document.querySelector('#source-meta').textContent.includes('synthetic://trace-viewer/checkout/"+index+"')"),"checkout-source-"+index);
+      await evaluate("document.getElementById('root').click()");
+      if(index===0)await clickNode("f0","Finding");
+    }
+  }
   await screenshot("desktop.png");
   await clickNode("f0","Finding");await clickNode("i0","Observation");
   await clickNode("e0","Evidence");await clickNode("s0","Source");
