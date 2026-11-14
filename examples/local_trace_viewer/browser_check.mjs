@@ -79,11 +79,22 @@ try{
   if(uploadScenario){
     await rpc("Emulation.setDeviceMetricsOverride",{width:390,height:844,deviceScaleFactor:1,mobile:false});
     check(await evaluate("(()=>{const start=document.getElementById('guide-start');const box=start.getBoundingClientRect();return start.checkVisibility() && box.top>=0 && box.bottom<=innerHeight && !document.getElementById('technical-view').checkVisibility()})()"),"mobile-start-visible-before-scrolling");
-    check(await evaluate("!document.getElementById('guide-feedback').checkVisibility() && !document.getElementById('guide-reports').checkVisibility()"),"guide-does-not-spoil-answer");
+    check(await evaluate("!document.getElementById('guide-feedback').checkVisibility() && !document.getElementById('guide-reports').checkVisibility() && !document.getElementById('guide-share-feedback').checkVisibility()"),"guide-does-not-spoil-answer");
     await screenshot("walkthrough-mobile.png");
     check(await evaluate("document.getElementById('guide-start').click();document.activeElement.id==='guide-reports-title' && document.querySelectorAll('#guide-report-list li').length===3 && document.documentElement.scrollWidth<=innerWidth+1"),"guide-compares-three-reports");
     check(await evaluate("document.getElementById('guide-lower').click();document.getElementById('guide-feedback').innerText.includes('One 12 MB photo failed and another succeeded.') && document.getElementById('guide-lower').getAttribute('aria-pressed')==='true'"),"guide-explains-lower-limit-choice");
     check(await evaluate("document.getElementById('guide-investigate').click();document.getElementById('guide-feedback').innerText.startsWith('Investigate first.') && document.getElementById('guide-lower').getAttribute('aria-pressed')==='false'"),"guide-explains-investigate-choice");
+    check(await evaluate(`(()=>{
+      const link=document.getElementById('guide-feedback-link');
+      const url=new URL(link.href);
+      const body=url.searchParams.get('body')??'';
+      return link.checkVisibility() && link.target==='_blank' && link.relList.contains('noreferrer')
+        && url.origin==='https://github.com'
+        && url.pathname==='/Ratiqora/intelligence-mcp-alpha/issues/new'
+        && url.searchParams.get('title')==='Alpha 4 demo feedback'
+        && body.includes('when it first opened') && body.includes('get stuck')
+        && !body.includes('Investigate first');
+    })()`),"feedback-opens-a-manual-public-issue-draft");
     await rpc("Emulation.setDeviceMetricsOverride",{width:1280,height:920,deviceScaleFactor:1,mobile:false});
     await evaluate("window.scrollTo(0,0)");
     await screenshot("walkthrough-desktop.png");
