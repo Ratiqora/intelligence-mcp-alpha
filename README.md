@@ -1,8 +1,14 @@
-# Ratiqora Intelligence MCP — Alpha 4
+# Ratiqora — Evidence Traceability for MCP
 
-Ratiqora helps MCP developers trace a conclusion back to the observations that support it. The local server checks evidence integrity and graph references, and exposes redacted evidence metadata over stdio.
+**See what supports a finding, what challenges it, and where each observation came from.** Ratiqora Alpha 4 is an open-source, local Model Context Protocol (MCP) server for evidence traceability and provenance. It checks evidence integrity and graph references and exposes redacted evidence metadata over stdio.
 
-**[Download the one-minute demo](https://github.com/Ratiqora/intelligence-mcp-alpha/releases/download/v0.1.0-alpha.4/ratiqora-alpha4-demo.html)** and open the HTML file in your browser. No installation or Python is needed. The English walkthrough asks whether a product team should lower its photo upload limit. Compare three reports, choose a next step, and optionally explore the evidence trail.
+| Start here | What you can do |
+| --- | --- |
+| **[Read a sample decision brief](examples/decision_workbench/samples/checkout-decision-brief.md)** | See how one successful checkout challenges a proposed Safari-wide workaround. Read it right here on GitHub. |
+| **[Download the one-minute browser demo](https://github.com/Ratiqora/intelligence-mcp-alpha/releases/download/v0.1.0-alpha.4/ratiqora-alpha4-demo.html)** | Open the HTML file and decide whether to change a photo upload limit. No installation, Python, or API key. |
+| **[Run the local MCP server](docs/alpha4-quickstart.md)** | Install the Alpha packages and run the synthetic trial on Windows or Linux. |
+
+In the checkout example, one Safari customer got stuck, another completed checkout, and a similar stall occurred in Chrome. Follow the counterexample to its source and see why changing the experience for every Safari user would outrun the evidence.
 
 ## A two-minute example: photo uploads
 
@@ -22,7 +28,7 @@ The walkthrough’s three-report scenario can be turned into a [one-page decisio
 
 ## Build your own decision brief
 
-Run the [local Decision Workbench](examples/decision_workbench/README.md) to link your observations to public or fictional source references. Ratiqora checks the internal links before you can download a Markdown brief. You provide the finding and evidence roles.
+Run the [local Decision Workbench](examples/decision_workbench/README.md) to link your observations to public or fictional source references. Try the [sample checkout CSV](examples/decision_workbench/samples/checkout-observations.csv) before entering your own observations. Ratiqora checks the internal links before you can download a Markdown brief. You provide the finding and evidence roles.
 
 ## Try it
 
