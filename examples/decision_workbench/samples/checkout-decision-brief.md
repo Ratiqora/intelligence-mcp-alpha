@@ -1,14 +1,38 @@
-# Checkout decision brief: should we change checkout for every Safari user?
+# One checkout stall, one new clue
 
-**Decision:** Keep the current Safari checkout flow and investigate the wallet handoff first. These fictional reports identify a testable next step; they do not establish a root cause.
+A shopper approves a wallet payment in Safari, but checkout never finishes. Should the team change checkout for everyone who uses Safari?
 
-## What the observations say
+This fictional case follows the same decision through two versions. One new observation changes the next test, even though the decision about Safari stays the same.
 
-| Observation | How it affects the decision | Source |
+[Read the first clues](#version-1-the-first-clues) · [See what changed](#version-2-the-controlled-replay) · [Jump to the next step](#next-step)
+
+## Version 1: The first clues
+
+A saved-card payment then succeeds in Safari. That is a reason to doubt that checkout is broken for *every* Safari shopper. A similar wallet stall turns up in Chrome, too. Now the team has a better question: where does the wallet handoff break?
+
+**Decision:** Leave the Safari checkout flow as it is.
+
+**Original next step:** Compare wallet and saved-card checkout on Safari and Chrome with the same account settings. Check where each payment stalls before proposing a UI change.
+
+### What the observations say
+
+| Observation | What it tells the team | Source |
 | --- | --- | --- |
-| O1: Checkout stalled after wallet authorization in Safari. | Supports investigating the wallet handoff. | [S1](#s1-safari-wallet) |
-| O2: Checkout completed in Safari with a saved card. | Challenges the claim that checkout fails for every Safari user. | [S2](#s2-safari-saved-card) |
-| O3: Checkout also stalled after wallet authorization in Chrome. | Supports investigating the wallet handoff across browsers. | [S3](#s3-chrome-wallet) |
+| O1: Checkout stalled after wallet authorization in Safari. | Shows where the investigation started. | [S1](#s1-safari-wallet) |
+| O2: Checkout completed in Safari with a saved card. | Challenges the idea that checkout fails for every Safari user. | [S2](#s2-safari-saved-card) |
+| O3: Checkout also stalled after wallet authorization in Chrome. | Gives the team a reason to check the wallet flow across browsers. | [S3](#s3-chrome-wallet) |
+
+## Version 2: The controlled replay
+
+**What changed:** Keep the Safari flow as it is. Start the next test with the wallet callback. [Trace that change to the new observation and its source (S4)](#s4-controlled-wallet-replay).
+
+The team repeats wallet checkout in both browsers without changing the account, cart, or software build. With the callback disabled, checkout stalls. With it enabled, checkout finishes. The callback tells checkout how the wallet payment went.
+
+That result gives the team a specific thing to check in staging, its test environment. It does not establish what caused the original stalls in production or how often they happen.
+
+## Next step
+
+Verify that the wallet callback is configured and reaches checkout in staging. Then repeat the wallet test in Safari and Chrome, using a saved-card checkout as a comparison, before proposing a UI change.
 
 ## Sources
 
@@ -24,12 +48,12 @@ Fictional checkout trace QA-102, step 6.
 
 Fictional checkout trace QA-103, step 5.
 
-## Next step
+### S4 Controlled wallet replay
 
-Run wallet and saved-card checkout on both browsers with the same account settings. Compare the handoff and timeout events before choosing a UI change.
+Fictional matched checkout replay QA-104, row 4.
 
-**What is still unknown:** How often this happens, whether it depends on the wallet provider, and where the request stalls.
+**O4:** In a matched staging replay on Safari and Chrome, wallet checkout stalled when the callback was disabled and completed when it was enabled. The account, cart, and build stayed the same.
 
-This is a worked example of a human-authored brief. The cited traces are fictional. Ratiqora checks the internal reference structure when you generate a brief in the Workbench; it does not authenticate sources or judge the finding.
+The observations, traces, and decisions in this example are fictional. The brief is human-authored. When you generate a brief, Ratiqora checks the internal reference structure; it does not authenticate the sources or decide whether the finding is correct.
 
-[View the sample CSV](checkout-observations.csv) · [Run the local Decision Workbench](../README.md)
+[View the Version 1 sample CSV](checkout-observations.csv) · [Run the local Decision Workbench](../README.md)
