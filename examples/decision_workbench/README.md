@@ -13,6 +13,10 @@ Open <http://127.0.0.1:8765/>. You can use `--port 8766` if the port is in use.
 2. Add public or fictional source references. Add observations and select a source and role for each.
 3. Enter what remains unknown and the next step. Check references and download the validated brief.
 
+The preview groups observations marked **Challenges the finding** first. Use **Go to source**
+to jump from any observation to its listed reference. The downloaded Markdown uses a space
+at each line break in a source reference, so words remain separate.
+
 If you remove a source already referenced by an observation, the workbench asks you to fix the link
 before it will produce a brief. Core validates the finding, observation, evidence and source links.
 It does not open the cited material, judge the finding, or check whether the assigned roles are correct.
@@ -37,5 +41,5 @@ observation,source_reference,source_type,role
 
 Use `fictional` or `public` as the source type, and `supports`, `challenges`,
 or `context` as the role. A valid import replaces the source and observation
-rows, leaving the decision text in place. A rejected import leaves the draft
-untouched. Imports run locally; the workbench does not fetch the cited sources.
+rows, leaving the decision text in place. A rejected import keeps the draft and any validated
+preview. Imports run locally; the workbench does not fetch the cited sources.
