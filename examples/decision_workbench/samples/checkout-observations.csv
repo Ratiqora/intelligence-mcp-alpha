@@ -1,0 +1,4 @@
+observation,source_reference,source_type,role
+Checkout stalled after wallet authorization in Safari.,"Fictional checkout trace QA-101, step 5",fictional,supports
+Checkout completed in Safari with a saved card.,"Fictional checkout trace QA-102, step 6",fictional,challenges
+Checkout also stalled after wallet authorization in Chrome.,"Fictional checkout trace QA-103, step 5",fictional,supports
