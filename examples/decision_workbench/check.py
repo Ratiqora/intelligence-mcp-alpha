@@ -74,6 +74,12 @@ class WorkbenchTest(unittest.TestCase):
         self.assertIn("Run A &#124; page 2", report)
         self.assertNotIn("<img", report)
         self.assertNotIn("sha256:", report)
+        self.assertEqual(result["preview"]["observations"][1], {
+            "id": "O2", "role": "challenges", "label": "Challenges the finding",
+            "summary": self.draft["observations"][1]["text"], "source": "S2",
+        })
+        self.assertEqual(result["preview"]["sources"][1]["id"], "S2")
+        self.assertEqual(result["preview"]["sources"][1]["reference"], "Public report B")
         self.draft["sources"].pop()
         status, result = self.submit(self.draft)
         self.assertEqual(status, 400)
@@ -114,7 +120,7 @@ class WorkbenchTest(unittest.TestCase):
         ]:
             with self.subTest(name=name):
                 headers = {**self.headers, name: value}
-                self.assertEqual(self.submit(self.draft, headers)[0], 403)
+                self.assertEqual(self.request("POST", "/brief", headers=headers)[0], 403)
         status, _, body = self.request("POST", "/brief", "{")
         self.assertEqual(status, 400)
         self.assertNotIn(b"markdown", body)
@@ -171,6 +177,20 @@ class WorkbenchTest(unittest.TestCase):
                                "Origin": "http://example.invalid"}
             )[0], 403
         )
+
+    def test_multiline_source_keeps_word_boundaries(self):
+        status, parsed = self.csv_request(
+            b"observation,source_reference,source_type,role\r\n"
+            b'Checkout resumed,"Fictional checkout report p2\r\nSection C",fictional,challenges\r\n'
+        )
+        self.assertEqual(status, 200)
+        status, result = self.submit({**self.draft, **parsed})
+        self.assertEqual(status, 200)
+        self.assertEqual(
+            result["preview"]["sources"][0]["reference"],
+            "Fictional checkout report p2\r\nSection C",
+        )
+        self.assertIn("Fictional checkout report p2 Section C", result["markdown"])
 
 
 if __name__ == "__main__":

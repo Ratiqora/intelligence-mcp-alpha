@@ -29,7 +29,12 @@ fieldset{min-width:0;margin:12px 0;padding:10px 14px 14px;border:1px solid var(-
 legend{padding:0 6px;font-weight:700}
 .fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .remove{margin-top:12px}
-#report-text{white-space:pre-wrap;overflow-wrap:anywhere;margin:0 0 14px;padding:14px;background:var(--soft);border-radius:8px}
+#report-content{overflow-wrap:anywhere}
+#report-content li{margin-bottom:12px}
+#report-content li:target{background:var(--soft);outline:2px solid var(--brand);outline-offset:4px}
+#report-content a{color:var(--brand)}
+.reference,.report-reference{white-space:pre-wrap}
+.reference{min-height:50px}
 #status{min-height:1.55em;margin:.5em 0;color:var(--muted)}
 [hidden]{display:none!important}
 @media(max-width:560px){.fields{grid-template-columns:1fr;gap:0}}
@@ -79,8 +84,8 @@ and role columns. Use fictional or public for source_type, and supports, challen
 </form>
 <p id="status" role="status" tabindex="-1"></p>
 <section class="card" id="preview" aria-labelledby="report-heading" hidden>
-<h2 id="report-heading" tabindex="-1">Markdown preview</h2>
-<pre id="report-text"></pre>
+<h2 id="report-heading" tabindex="-1">Decision brief preview</h2>
+<div id="report-content"></div>
 <button class="primary" id="download" type="button">Download Markdown</button>
 </section>
 </main>
@@ -88,7 +93,7 @@ and role columns. Use fictional or public for source_type, and supports, challen
 <fieldset>
 <legend></legend>
 <div class="fields">
-<label>Source reference <input class="reference" maxlength="240" required></label>
+<label>Source reference <textarea class="reference" rows="2" maxlength="240" required></textarea></label>
 <label>Type <select class="kind">
 <option value="synthetic_document">Fictional</option>
 <option value="public_document">Public citation</option>
@@ -132,7 +137,7 @@ function resetPreview() {
   revision++;
   markdown = "";
   get("preview").hidden = true;
-  get("report-text").textContent = "";
+  get("report-content").replaceChildren();
   get("status").textContent = "";
 }
 function updateSources() {
@@ -146,7 +151,7 @@ function updateSources() {
     select.replaceChildren(new Option("Choose a source", ""));
     for (const source of activeSources) {
       const id = source.dataset.id;
-      const label = source.querySelector(".reference").value.trim();
+      const label = source.querySelector(".reference").value.trim().replace(/\s+/g, " ");
       select.add(new Option(label ? id + " — " + label : id, id));
     }
     if (selected && !activeSources.some(row => row.dataset.id === selected)) {
@@ -200,8 +205,11 @@ function addObservation(focus = true) {
   if (focus) row.querySelector(".observation").focus();
   return row;
 }
-form.addEventListener("input", resetPreview);
-form.addEventListener("change", resetPreview);
+function onDraftEdit(event) {
+  if (event.target !== get("csv-file")) resetPreview();
+}
+form.addEventListener("input", onDraftEdit);
+form.addEventListener("change", onDraftEdit);
 get("add").addEventListener("click", () => addObservation());
 get("add-source").addEventListener("click", () => addSource());
 get("import-csv").addEventListener("click", async () => {
@@ -257,8 +265,57 @@ get("import-csv").addEventListener("click", async () => {
     get("generate").disabled = false;
   }
 });
+function reportElement(tag, text) {
+  const element = document.createElement(tag);
+  if (text !== undefined) element.textContent = text;
+  return element;
+}
+function renderPreview(preview) {
+  const report = get("report-content");
+  const content = document.createDocumentFragment();
+  function section(title, text) {
+    content.append(reportElement("h3", title), reportElement("p", text));
+  }
+  section("Decision question", preview.question);
+  section("Finding", preview.finding);
+  function observationList(title, observations) {
+    if (!observations.length) return;
+    const list = reportElement("ul");
+    for (const observation of observations) {
+      const item = reportElement("li");
+      const link = reportElement("a", "Go to source " + observation.source);
+      const target = "report-source-" + observation.source;
+      link.href = "#" + target;
+      link.addEventListener("click", () => get(target)?.focus({preventScroll: true}));
+      item.append(reportElement("strong", observation.id + " · " + observation.label),
+        reportElement("p", observation.summary), link);
+      list.append(item);
+    }
+    content.append(reportElement("h3", title), list);
+  }
+  observationList("Challenges to the finding",
+    preview.observations.filter(row => row.role === "challenges"));
+  observationList("Supporting observations and context",
+    preview.observations.filter(row => row.role !== "challenges"));
+  const sourcesList = reportElement("ul");
+  for (const source of preview.sources) {
+    const item = reportElement("li", source.id + " (" + source.kind + "): " + source.reference);
+    item.id = "report-source-" + source.id;
+    item.tabIndex = -1;
+    item.className = "report-reference";
+    sourcesList.append(item);
+  }
+  content.append(reportElement("h3", "Sources"), sourcesList);
+  section("What is still unknown", preview.unknowns);
+  section("Next step", preview.next);
+  const note = reportElement("p", "Ratiqora checked the internal references. The author supplied the observations, roles, and finding. Cited materials were not opened or authenticated.");
+  note.className = "hint";
+  content.append(note);
+  report.replaceChildren(content);
+}
 form.addEventListener("submit", async event => {
   event.preventDefault();
+  if (get("import-csv").disabled) return;
   resetPreview();
   const current = revision;
   const data = Object.fromEntries(
@@ -288,8 +345,8 @@ form.addEventListener("submit", async event => {
       get("status").focus();
       return;
     }
+    renderPreview(result.preview);
     markdown = result.markdown;
-    get("report-text").textContent = markdown;
     get("preview").hidden = false;
     get("status").textContent = "References passed the structure check. Review and download.";
     get("report-heading").focus();

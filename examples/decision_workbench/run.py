@@ -186,7 +186,34 @@ def build_brief(data):
         "Ratiqora checked the internal references. The author supplied the observations, roles, "
         "and finding. Cited materials were not opened or authenticated.", "",
     ])
-    return "\n".join(report)
+    preview = {
+        "question": question,
+        "finding": finding.statement,
+        "unknowns": unknowns,
+        "next": next_step,
+        "observations": [
+            {
+                "id": str(item.id),
+                "role": row["role"],
+                "label": role,
+                "summary": item.normalized_content,
+                "source": str(raw.source_record_id),
+            }
+            for item, raw, role, row in zip(items, evidence, roles, data["observations"], strict=True)
+        ],
+        "sources": [
+            {
+                "id": str(source.id),
+                "kind": (
+                    "Fictional" if source.source.source_kind == "synthetic_document"
+                    else "Public citation"
+                ),
+                "reference": source.source.external_reference,
+            }
+            for source in sources.values()
+        ],
+    }
+    return {"markdown": "\n".join(report), "preview": preview}
 
 
 def handler(page, token, port):
@@ -247,7 +274,7 @@ def handler(page, token, port):
                     raise BriefError("The request is incomplete.")
                 result = (
                     parse_observations_csv(body) if importing
-                    else {"markdown": build_brief(json.loads(body.decode("utf-8")))}
+                    else build_brief(json.loads(body.decode("utf-8")))
                 )
             except BriefError as error:
                 self.send_json(400, {"error": str(error)})
