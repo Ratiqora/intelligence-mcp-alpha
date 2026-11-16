@@ -86,7 +86,11 @@ and role columns. Use fictional or public for source_type, and supports, challen
 <section class="card" id="preview" aria-labelledby="report-heading" hidden>
 <h2 id="report-heading" tabindex="-1">Decision brief preview</h2>
 <div id="report-content"></div>
-<button class="primary" id="download" type="button">Download Markdown</button>
+<div class="actions">
+<button class="primary" id="download-html" type="button">Download HTML for review</button>
+<button id="download" type="button">Download Markdown</button>
+</div>
+<p class="hint">The HTML opens offline in a browser. Both files include your entries; review them before sharing.</p>
 </section>
 </main>
 <template id="source-template">
@@ -131,11 +135,11 @@ const token = "__WORKBENCH_TOKEN__";
 const maxRows = 12;
 let nextSource = 1;
 let revision = 0;
-let markdown = "";
+let validatedReport = null;
 
 function resetPreview() {
   revision++;
-  markdown = "";
+  validatedReport = null;
   get("preview").hidden = true;
   get("report-content").replaceChildren();
   get("status").textContent = "";
@@ -270,11 +274,11 @@ function reportElement(tag, text) {
   if (text !== undefined) element.textContent = text;
   return element;
 }
-function renderPreview(preview) {
-  const report = get("report-content");
+function buildReport(preview, interactive = false) {
+  const heading = interactive ? "h3" : "h2";
   const content = document.createDocumentFragment();
   function section(title, text) {
-    content.append(reportElement("h3", title), reportElement("p", text));
+    content.append(reportElement(heading, title), reportElement("p", text));
   }
   section("Decision question", preview.question);
   section("Finding", preview.finding);
@@ -285,13 +289,15 @@ function renderPreview(preview) {
       const item = reportElement("li");
       const link = reportElement("a", "Go to source " + observation.source);
       const target = "report-source-" + observation.source;
-      link.href = "#" + target;
-      link.addEventListener("click", () => get(target)?.focus({preventScroll: true}));
+      link.setAttribute("href", "#" + target);
+      if (interactive) {
+        link.addEventListener("click", () => get(target)?.focus({preventScroll: true}));
+      }
       item.append(reportElement("strong", observation.id + " · " + observation.label),
         reportElement("p", observation.summary), link);
       list.append(item);
     }
-    content.append(reportElement("h3", title), list);
+    content.append(reportElement(heading, title), list);
   }
   observationList("Challenges to the finding",
     preview.observations.filter(row => row.role === "challenges"));
@@ -305,13 +311,13 @@ function renderPreview(preview) {
     item.className = "report-reference";
     sourcesList.append(item);
   }
-  content.append(reportElement("h3", "Sources"), sourcesList);
+  content.append(reportElement(heading, "Sources"), sourcesList);
   section("What is still unknown", preview.unknowns);
   section("Next step", preview.next);
   const note = reportElement("p", "Ratiqora checked the internal references. The author supplied the observations, roles, and finding. Cited materials were not opened or authenticated.");
   note.className = "hint";
   content.append(note);
-  report.replaceChildren(content);
+  return content;
 }
 form.addEventListener("submit", async event => {
   event.preventDefault();
@@ -345,8 +351,8 @@ form.addEventListener("submit", async event => {
       get("status").focus();
       return;
     }
-    renderPreview(result.preview);
-    markdown = result.markdown;
+    get("report-content").replaceChildren(buildReport(result.preview, true));
+    validatedReport = result;
     get("preview").hidden = false;
     get("status").textContent = "References passed the structure check. Review and download.";
     get("report-heading").focus();
@@ -357,16 +363,48 @@ form.addEventListener("submit", async event => {
     }
   }
 });
-get("download").addEventListener("click", () => {
-  if (!markdown) return;
-  const url = URL.createObjectURL(new Blob([markdown], {type:"text/markdown;charset=utf-8"}));
+function downloadReport(content, type, extension) {
+  const url = URL.createObjectURL(new Blob([content], {type}));
   const link = document.createElement("a");
   link.href = url;
-  link.download = "ratiqora-decision-brief.md";
+  link.download = "ratiqora-decision-brief." + extension;
   document.body.append(link);
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+get("download").addEventListener("click", () => {
+  if (!validatedReport) return;
+  downloadReport(validatedReport.markdown, "text/markdown;charset=utf-8", "md");
+});
+get("download-html").addEventListener("click", () => {
+  if (!validatedReport) return;
+  const output = document.implementation.createHTMLDocument("Ratiqora decision brief");
+  output.documentElement.lang = "en";
+  const charset = output.createElement("meta");
+  charset.setAttribute("charset", "utf-8");
+  const viewport = output.createElement("meta");
+  viewport.name = "viewport";
+  viewport.content = "width=device-width, initial-scale=1";
+  const policy = output.createElement("meta");
+  policy.httpEquiv = "Content-Security-Policy";
+  policy.content = "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'";
+  const style = output.createElement("style");
+  style.textContent = `
+    body{max-width:760px;margin:auto;padding:24px;color:#183853;font:16px/1.55 system-ui,sans-serif;overflow-wrap:anywhere}
+    a{color:#116888}
+    li{margin-bottom:12px}
+    :focus-visible,li:target{outline:2px solid #116888;outline-offset:4px}
+    li:target{background:#edf6fb}
+    .report-reference{white-space:pre-wrap}
+    .hint{color:#456176}
+  `;
+  output.head.prepend(charset, viewport, policy);
+  output.head.append(style);
+  const main = output.createElement("main");
+  main.append(reportElement("h1", "Ratiqora decision brief"), buildReport(validatedReport.preview));
+  output.body.append(main);
+  downloadReport("<!doctype html>\n" + output.documentElement.outerHTML, "text/html;charset=utf-8", "html");
 });
 if (location.protocol === "file:") {
   form.hidden = true;

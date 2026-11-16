@@ -14,8 +14,10 @@ Open <http://127.0.0.1:8765/>. You can use `--port 8766` if the port is in use.
 3. Enter what remains unknown and the next step. Check references and download the validated brief.
 
 The preview groups observations marked **Challenges the finding** first. Use **Go to source**
-to jump from any observation to its listed reference. The downloaded Markdown uses a space
-at each line break in a source reference, so words remain separate.
+to jump from any observation to its listed reference. Choose **Download HTML for review**
+to give someone the same linked brief. The file opens offline in a browser without the Workbench,
+scripts, or external resources. **Download Markdown** remains available for text editing and uses
+a space at each line break in a source reference, so words remain separate.
 
 If you remove a source already referenced by an observation, the workbench asks you to fix the link
 before it will produce a brief. Core validates the finding, observation, evidence and source links.
@@ -24,7 +26,8 @@ The evidence records bind author-entered observation summaries in memory. The re
 summaries and source references with no separate raw evidence payload or integrity digest.
 
 Use public or fictional material. The workbench listens only on your machine. It creates no saved
-drafts and does not fetch sources. Your entries are included in the Markdown file you download.
+drafts and does not fetch sources. Both download formats include your entries. Review them
+before sharing, and use public or fictional material only.
 
 ## Import multiple observations
 
