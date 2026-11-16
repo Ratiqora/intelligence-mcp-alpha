@@ -13,8 +13,9 @@ Open <http://127.0.0.1:8765/>. You can use `--port 8766` if the port is in use.
 2. Add public or fictional source references. Add observations and select a source and role for each.
 3. Enter what remains unknown and the next step. Check references and download the validated brief.
 
-The preview groups observations marked **Challenges the finding** first. Use **Go to source**
-to jump from any observation to its listed reference. Choose **Download HTML for review**
+Use **Jump to next step** at the top of the preview to go to the proposed action. The preview
+groups observations marked **Challenges the finding** first. Use **Go to source** to jump from
+any observation to its listed reference. Choose **Download HTML for review**
 to give someone the same linked brief. The file opens offline in a browser without the Workbench,
 scripts, or external resources. **Download Markdown** remains available for text editing and uses
 a space at each line break in a source reference, so words remain separate.

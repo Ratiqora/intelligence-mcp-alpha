@@ -31,7 +31,7 @@ legend{padding:0 6px;font-weight:700}
 .remove{margin-top:12px}
 #report-content{overflow-wrap:anywhere}
 #report-content li{margin-bottom:12px}
-#report-content li:target{background:var(--soft);outline:2px solid var(--brand);outline-offset:4px}
+#report-content :target{background:var(--soft);outline:2px solid var(--brand);outline-offset:4px}
 #report-content a{color:var(--brand)}
 .reference,.report-reference{white-space:pre-wrap}
 .reference{min-height:50px}
@@ -277,9 +277,26 @@ function reportElement(tag, text) {
 function buildReport(preview, interactive = false) {
   const heading = interactive ? "h3" : "h2";
   const content = document.createDocumentFragment();
-  function section(title, text) {
-    content.append(reportElement(heading, title), reportElement("p", text));
+  function section(title, text, id) {
+    const label = reportElement(heading, title);
+    if (id) {
+      label.id = id;
+      label.tabIndex = -1;
+    }
+    content.append(label, reportElement("p", text));
   }
+  function jumpLink(text, target) {
+    const link = reportElement("a", text);
+    link.setAttribute("href", "#" + target);
+    if (interactive) {
+      link.addEventListener("click", () => get(target)?.focus({preventScroll: true}));
+    }
+    return link;
+  }
+  const nextStepId = "report-next-step";
+  const shortcut = reportElement("p");
+  shortcut.append(jumpLink("Jump to next step", nextStepId));
+  content.append(shortcut);
   section("Decision question", preview.question);
   section("Finding", preview.finding);
   function observationList(title, observations) {
@@ -287,12 +304,8 @@ function buildReport(preview, interactive = false) {
     const list = reportElement("ul");
     for (const observation of observations) {
       const item = reportElement("li");
-      const link = reportElement("a", "Go to source " + observation.source);
-      const target = "report-source-" + observation.source;
-      link.setAttribute("href", "#" + target);
-      if (interactive) {
-        link.addEventListener("click", () => get(target)?.focus({preventScroll: true}));
-      }
+      const link = jumpLink("Go to source " + observation.source,
+        "report-source-" + observation.source);
       item.append(reportElement("strong", observation.id + " · " + observation.label),
         reportElement("p", observation.summary), link);
       list.append(item);
@@ -313,7 +326,7 @@ function buildReport(preview, interactive = false) {
   }
   content.append(reportElement(heading, "Sources"), sourcesList);
   section("What is still unknown", preview.unknowns);
-  section("Next step", preview.next);
+  section("Next step", preview.next, nextStepId);
   const note = reportElement("p", "Ratiqora checked the internal references. The author supplied the observations, roles, and finding. Cited materials were not opened or authenticated.");
   note.className = "hint";
   content.append(note);
@@ -394,8 +407,8 @@ get("download-html").addEventListener("click", () => {
     body{max-width:760px;margin:auto;padding:24px;color:#183853;font:16px/1.55 system-ui,sans-serif;overflow-wrap:anywhere}
     a{color:#116888}
     li{margin-bottom:12px}
-    :focus-visible,li:target{outline:2px solid #116888;outline-offset:4px}
-    li:target{background:#edf6fb}
+    :focus-visible,:target{outline:2px solid #116888;outline-offset:4px}
+    :target{background:#edf6fb}
     .report-reference{white-space:pre-wrap}
     .hint{color:#456176}
   `;
