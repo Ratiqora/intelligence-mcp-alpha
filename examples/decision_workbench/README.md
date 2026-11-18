@@ -9,12 +9,12 @@ python -I examples/decision_workbench/run.py
 
 Open <http://127.0.0.1:8765/>. You can use `--port 8766` if the port is in use.
 
-1. Enter a question and your finding.
-2. Add public or fictional source references. Add observations and select a source and role for each.
-3. Enter what remains unknown and the next step. Check references and download the validated brief.
+1. Enter the decision question and the hypothesis you want to test. For the [checkout CSV](samples/checkout-observations.csv), use “Every Safari checkout fails.”
+2. Add public or fictional source references. Add observations and select a source and role for each. The successful Safari payment challenges that hypothesis; the Chrome stall adds context about the wallet flow.
+3. Write your conclusion separately (for example, “Leave the Safari flow as it is for now”). Enter what remains unknown and the next step. Check references and download the validated brief.
 
 Use **Jump to next step** at the top of the preview to go to the proposed action. The preview
-groups observations marked **Challenges the finding** first. Use **Go to source** to jump from
+groups observations marked **Challenges the hypothesis** first. Use **Go to source** to jump from
 any observation to its listed reference. Choose **Download HTML for review**
 to give someone the same linked brief. The file opens offline in a browser without the Workbench,
 scripts, or external resources. **Download Markdown** remains available for text editing and uses
@@ -44,6 +44,6 @@ observation,source_reference,source_type,role
 ```
 
 Use `fictional` or `public` as the source type, and `supports`, `challenges`,
-or `context` as the role. A valid import replaces the source and observation
+or `context` as the role relative to your hypothesis. A valid import replaces the source and observation
 rows, leaving the decision text in place. A rejected import keeps the draft and any validated
 preview. Imports run locally; the workbench does not fetch the cited sources.

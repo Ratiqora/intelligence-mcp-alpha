@@ -1,6 +1,6 @@
 # Ratiqora — Evidence Traceability for MCP
 
-**See what supports a finding, what challenges it, and where each observation came from.** Ratiqora Alpha 4 is an open-source, local Model Context Protocol (MCP) server for evidence traceability and provenance. It checks evidence integrity and graph references and exposes redacted evidence metadata over stdio.
+**Trace a decision back to the observations and sources behind it.** Ratiqora Alpha 4 is an open-source, local Model Context Protocol (MCP) server for evidence traceability and provenance. It checks evidence integrity and graph references and exposes redacted evidence metadata over stdio.
 
 | Start here | What you can do |
 | --- | --- |
@@ -28,7 +28,7 @@ The walkthrough’s three-report scenario can be turned into a [one-page decisio
 
 ## Build your own decision brief
 
-Run the [local Decision Workbench](examples/decision_workbench/README.md) to link your observations to public or fictional source references. Try the [sample checkout CSV](examples/decision_workbench/samples/checkout-observations.csv) before entering your own observations. Ratiqora checks the internal links before you can download a Markdown brief. You provide the finding and evidence roles.
+Run the [local Decision Workbench](examples/decision_workbench/README.md) to link your observations to public or fictional source references. Try the [sample checkout CSV](examples/decision_workbench/samples/checkout-observations.csv) before entering your own observations. Ratiqora checks the internal links before you download an offline HTML or Markdown brief. You mark which observations support or challenge your hypothesis, then write your own conclusion.
 
 ## Try it
 
