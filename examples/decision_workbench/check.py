@@ -34,7 +34,8 @@ class WorkbenchTest(unittest.TestCase):
         }
         self.draft = {
             "question": "Should we change the timeout?",
-            "finding": "Two reports show different outcomes.",
+            "hypothesis": "Every upload times out",
+            "finding": "Keep the existing timeout",
             "unknowns": "Test conditions vary.",
             "next": "Repeat the test under matched conditions.",
             "sources": [
@@ -67,15 +68,15 @@ class WorkbenchTest(unittest.TestCase):
         self.assertEqual(status, 200)
         report = result["markdown"]
         self.assertIn(self.draft["question"], report)
-        self.assertIn("| O1 | Supports the finding | Upload failed&#46; | S1 |", report)
-        self.assertIn("| O2 | Challenges the finding |", report)
+        self.assertIn("| O1 | Supports the hypothesis | Upload failed&#46; | S1 |", report)
+        self.assertIn("| O2 | Challenges the hypothesis |", report)
         self.assertIn("| S2 |", report)
         self.assertIn("S2 (Public citation): Public report B", report)
         self.assertIn("Run A &#124; page 2", report)
         self.assertNotIn("<img", report)
         self.assertNotIn("sha256:", report)
         self.assertEqual(result["preview"]["observations"][1], {
-            "id": "O2", "role": "challenges", "label": "Challenges the finding",
+            "id": "O2", "role": "challenges", "label": "Challenges the hypothesis",
             "summary": self.draft["observations"][1]["text"], "source": "S2",
         })
         self.assertEqual(result["preview"]["sources"][1]["id"], "S2")
@@ -88,6 +89,35 @@ class WorkbenchTest(unittest.TestCase):
         status, result = self.submit(self.draft)
         self.assertEqual(status, 200)
         self.assertNotIn("S2", result["markdown"])
+
+    def test_hypothesis_and_conclusion_stay_distinct(self):
+        status, result = self.submit(self.draft)
+        self.assertEqual(status, 200)
+        for key, heading in [
+            ("hypothesis", "Hypothesis under review"), ("finding", "Author’s conclusion")
+        ]:
+            self.assertEqual(result["preview"][key], self.draft[key])
+            self.assertIn(f"## {heading}\n\n{self.draft[key]}\n", result["markdown"])
+        revised = {**self.draft, "finding": "Investigate the retry first"}
+        status, updated = self.submit(revised)
+        self.assertEqual(status, 200)
+        self.assertEqual(updated["preview"]["observations"], result["preview"]["observations"])
+        self.assertEqual(updated["preview"]["hypothesis"], self.draft["hypothesis"])
+        self.assertEqual(updated["preview"]["finding"], revised["finding"])
+
+    def test_hypothesis_required_independently_of_conclusion(self):
+        for value in [None, " ", "x" * 701]:
+            draft = self.draft.copy()
+            if value is None:
+                draft.pop("hypothesis")
+            else:
+                draft["hypothesis"] = value
+            with self.subTest(value_length=len(value or "")):
+                status, result = self.submit(draft)
+                self.assertEqual(status, 400)
+                self.assertEqual(result, {
+                    "error": "Hypothesis under review must contain 1–700 characters of text."
+                })
 
     def test_invalid_drafts_return_only_safe_error(self):
         cases = []

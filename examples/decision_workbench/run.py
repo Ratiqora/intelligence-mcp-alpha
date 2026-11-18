@@ -28,8 +28,8 @@ from intelligence_core.contracts import (
 MAX_BODY = 65536
 SOURCE_ID = re.compile(r"S[1-9][0-9]{0,5}")
 ROLES = {
-    "supports": "Supports the finding",
-    "challenges": "Challenges the finding",
+    "supports": "Supports the hypothesis",
+    "challenges": "Challenges the hypothesis",
     "context": "Adds context",
 }
 
@@ -106,7 +106,8 @@ def build_brief(data):
     if not isinstance(data, dict):
         raise BriefError("Expected a decision brief object.")
     question = field(data.get("question"), "Decision question", 240)
-    finding_text = field(data.get("finding"), "Finding", 700)
+    hypothesis = field(data.get("hypothesis"), "Hypothesis under review", 700)
+    finding_text = field(data.get("finding"), "Author’s conclusion", 700)
     unknowns = field(data.get("unknowns"), "Unknowns", 700)
     next_step = field(data.get("next"), "Next step", 700)
     collection = CollectionContext(datetime.now(timezone.utc), "manual_workbench_entry", "1")
@@ -165,9 +166,10 @@ def build_brief(data):
 
     report = [
         "# Decision brief", "", "## Decision question", "", plain(question), "",
-        "## Finding", "", plain(finding.statement), "",
+        "## Hypothesis under review", "", plain(hypothesis), "",
+        "## Author’s conclusion", "", plain(finding.statement), "",
         "## Observations and references", "",
-        "| Observation | Role | Summary | Source |",
+        "| Observation | Role relative to the hypothesis | Summary | Source |",
         "| --- | --- | --- | --- |",
     ]
     for item, raw, role in zip(items, evidence, roles, strict=True):
@@ -183,11 +185,12 @@ def build_brief(data):
     report.extend([
         "", "## What is still unknown", "", plain(unknowns), "",
         "## Next step", "", plain(next_step), "",
-        "Ratiqora checked the internal references. The author supplied the observations, roles, "
-        "and finding. Cited materials were not opened or authenticated.", "",
+        "Ratiqora checked the internal references. The author supplied the hypothesis, observations, "
+        "roles, and conclusion. Cited materials were not opened or authenticated.", "",
     ])
     preview = {
         "question": question,
+        "hypothesis": hypothesis,
         "finding": finding.statement,
         "unknowns": unknowns,
         "next": next_step,

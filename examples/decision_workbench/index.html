@@ -45,19 +45,20 @@ legend{padding:0 6px;font-weight:700}
 <h1>Build a decision brief</h1>
 <p>Bring your own decision and shareable observations. Link each observation to a listed source, check the references, then download a brief.</p>
 </header>
-<p class="hint" id="privacy">Use fictional or public material only. Validation runs on your computer and keeps no saved draft. Your entries appear in the downloaded file. You write the finding and decide how each observation relates to it.</p>
+<p class="hint" id="privacy">Use fictional or public material only. Validation runs on your computer and keeps no saved draft. Your entries appear in the downloaded file. You choose the hypothesis, assign each observation a role, and write your conclusion.</p>
 <p class="hint" id="startup" hidden>Start the local workbench with Python and open its local address to validate and export.</p>
 <form id="brief" aria-describedby="privacy" autocomplete="off">
 <section class="card" aria-labelledby="decision-heading">
 <h2 id="decision-heading">1. Define the decision</h2>
 <label for="question">Decision question</label>
 <input id="question" maxlength="240" required placeholder="What should the team decide?">
-<label for="finding">Your finding</label>
-<textarea id="finding" maxlength="700" required placeholder="What do the observations suggest?"></textarea>
+<label for="hypothesis">Hypothesis under review</label>
+<p class="hint" id="hypothesis-help">State a claim that an observation could support or challenge. For example: “Every Safari checkout fails.”</p>
+<textarea id="hypothesis" maxlength="700" aria-describedby="hypothesis-help" required></textarea>
 </section>
 <section class="card" aria-labelledby="observations-heading">
 <h2 id="observations-heading">2. Link your observations</h2>
-<p class="hint">Add the references you plan to cite, such as “Public report A, page 2”. Then assign a source to each observation.</p>
+<p class="hint">Add the references you plan to cite, such as “Public report A, page 2”. For each observation, choose its source and decide whether it supports the hypothesis, challenges it, or just adds context.</p>
 <details>
 <summary>Import observations from CSV</summary>
 <p class="hint" id="csv-help">Use a UTF-8 CSV with observation, source_reference, source_type,
@@ -74,7 +75,9 @@ and role columns. Use fictional or public for source_type, and supports, challen
 <button type="button" id="add">Add observation</button>
 </section>
 <section class="card" aria-labelledby="action-heading">
-<h2 id="action-heading">3. Set the next step</h2>
+<h2 id="action-heading">3. Draw a conclusion and set the next step</h2>
+<label for="finding">Your conclusion</label>
+<textarea id="finding" maxlength="700" required placeholder="After weighing the observations, what do you conclude or recommend?"></textarea>
 <label for="unknowns">What is still unknown?</label>
 <textarea id="unknowns" maxlength="700" required></textarea>
 <label for="next">What should happen next?</label>
@@ -114,11 +117,11 @@ and role columns. Use fictional or public for source_type, and supports, challen
 <div class="fields">
 <label>Source
 <select class="source" required></select></label>
-<label>Role
+<label>Role relative to the hypothesis
 <select class="role" required>
 <option value="">Choose a role</option>
-<option value="supports">Supports the finding</option>
-<option value="challenges">Challenges the finding</option>
+<option value="supports">Supports the hypothesis</option>
+<option value="challenges">Challenges the hypothesis</option>
 <option value="context">Adds context</option>
 </select></label>
 </div>
@@ -298,7 +301,8 @@ function buildReport(preview, interactive = false) {
   shortcut.append(jumpLink("Jump to next step", nextStepId));
   content.append(shortcut);
   section("Decision question", preview.question);
-  section("Finding", preview.finding);
+  section("Hypothesis under review", preview.hypothesis);
+  section("Author’s conclusion", preview.finding);
   function observationList(title, observations) {
     if (!observations.length) return;
     const list = reportElement("ul");
@@ -312,9 +316,9 @@ function buildReport(preview, interactive = false) {
     }
     content.append(reportElement(heading, title), list);
   }
-  observationList("Challenges to the finding",
+  observationList("Observations that challenge the hypothesis",
     preview.observations.filter(row => row.role === "challenges"));
-  observationList("Supporting observations and context",
+  observationList("Supporting observations and context for the hypothesis",
     preview.observations.filter(row => row.role !== "challenges"));
   const sourcesList = reportElement("ul");
   for (const source of preview.sources) {
@@ -327,7 +331,7 @@ function buildReport(preview, interactive = false) {
   content.append(reportElement(heading, "Sources"), sourcesList);
   section("What is still unknown", preview.unknowns);
   section("Next step", preview.next, nextStepId);
-  const note = reportElement("p", "Ratiqora checked the internal references. The author supplied the observations, roles, and finding. Cited materials were not opened or authenticated.");
+  const note = reportElement("p", "Ratiqora checked the internal references. The author supplied the hypothesis, observations, roles, and conclusion. Cited materials were not opened or authenticated.");
   note.className = "hint";
   content.append(note);
   return content;
@@ -338,7 +342,7 @@ form.addEventListener("submit", async event => {
   resetPreview();
   const current = revision;
   const data = Object.fromEntries(
-    ["question", "finding", "unknowns", "next"].map(id => [id, get(id).value])
+    ["question", "hypothesis", "finding", "unknowns", "next"].map(id => [id, get(id).value])
   );
   data.sources = Array.from(sources.children, row => ({
     id: row.dataset.id,
