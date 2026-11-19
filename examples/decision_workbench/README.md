@@ -33,7 +33,7 @@ before sharing, and use public or fictional material only.
 ## Import multiple observations
 
 In **Link your observations**, open **Import observations from CSV** and click
-**Replace rows from CSV** after selecting your file. Use UTF-8 with the columns
+**Add new rows from CSV** after selecting your file. Use UTF-8 with the columns
 below, up to 12 observations and 64 KiB. Quote fields containing commas, quotes,
 or newlines. The import reuses identical source references of the same type.
 
@@ -44,6 +44,13 @@ observation,source_reference,source_type,role
 ```
 
 Use `fictional` or `public` as the source type, and `supports`, `challenges`,
-or `context` as the role relative to your hypothesis. A valid import replaces the source and observation
-rows, leaving the decision text in place. A rejected import keeps the draft and any validated
-preview. Imports run locally; the workbench does not fetch the cited sources.
+or `context` as the role relative to your hypothesis. Adding rows keeps existing observations, source IDs and decision text. A matching observation
+from the same source is skipped, even if the incoming role differs; edit its role in the form
+if your interpretation has changed. **Replace rows from CSV** still replaces all source and
+observation rows. If an import is rejected, the draft and any validated preview stay as they were. Imports run locally; the workbench does not fetch the cited sources.
+
+**Try a second round:** After generating the first checkout brief, add the
+[controlled replay CSV](samples/checkout-replay.csv) in the same open Workbench.
+The replay becomes O4 with source S4. Keep the Safari conclusion, change the next
+step to checking the wallet callback in staging, and generate a new brief. Adding the
+same replay again will not count it as a second observation.

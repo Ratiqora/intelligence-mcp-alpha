@@ -62,9 +62,10 @@ legend{padding:0 6px;font-weight:700}
 <details>
 <summary>Import observations from CSV</summary>
 <p class="hint" id="csv-help">Use a UTF-8 CSV with observation, source_reference, source_type,
-and role columns. Use fictional or public for source_type, and supports, challenges, or context for role. Import replaces the source and observation rows and keeps your decision text.</p>
+and role columns. Use fictional or public for source_type, and supports, challenges, or context for role. Add new rows to keep your work, or replace all source and observation rows. Both options keep your decision text.</p>
 <label for="csv-file">Observations CSV</label>
 <input type="file" id="csv-file" accept=".csv,text/csv" aria-describedby="csv-help">
+<button type="button" id="append-csv">Add new rows from CSV</button>
 <button type="button" id="import-csv">Replace rows from CSV</button>
 <p id="import-status" role="status"></p>
 </details>
@@ -219,9 +220,48 @@ form.addEventListener("input", onDraftEdit);
 form.addEventListener("change", onDraftEdit);
 get("add").addEventListener("click", () => addObservation());
 get("add-source").addEventListener("click", () => addSource());
-get("import-csv").addEventListener("click", async () => {
+// Textarea values normalize line endings; compare imported records the same way.
+const matchText = value => value.trim().replace(/\r\n?/g, "\n");
+const sourceKey = (kind, reference) => JSON.stringify([kind, matchText(reference)]);
+function blankStarter() {
+  const source = sources.firstElementChild, observation = rows.firstElementChild;
+  return sources.childElementCount === 1 && rows.childElementCount === 1
+    && !source.querySelector(".reference").value && source.querySelector(".kind").value === "synthetic_document"
+    && [".observation", ".role", ".source"].every(selector => !observation.querySelector(selector).value);
+}
+function planAppend(parsed) {
+  const existing = new Map(), keysById = new Map();
+  for (const row of sources.children) {
+    const key = sourceKey(row.querySelector(".kind").value, row.querySelector(".reference").value);
+    if (!existing.has(key)) existing.set(key, row.dataset.id);
+    keysById.set(row.dataset.id, key);
+  }
+  const observationKey = (key, text) => JSON.stringify([key, matchText(text)]);
+  const seen = new Set(Array.from(rows.children, row => observationKey(
+    keysById.get(row.querySelector(".source").value), row.querySelector(".observation").value
+  )));
+  const incoming = new Map(parsed.sources.map(s => [s.id, sourceKey(s.kind, s.reference)]));
+  const observations = parsed.observations.filter(o => {
+    const key = observationKey(incoming.get(o.source), o.text);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  const needed = new Set(observations.map(o => incoming.get(o.source)));
+  const newSources = new Map();
+  const sourceIds = new Map();
+  for (const s of parsed.sources) {
+    const key = incoming.get(s.id);
+    if (existing.has(key)) sourceIds.set(s.id, existing.get(key));
+    else if (needed.has(key) && !newSources.has(key)) newSources.set(key, s);
+  }
+  return {observations, newSources, sourceIds, incoming};
+}
+get("append-csv").addEventListener("click", () => importCsv(true));
+get("import-csv").addEventListener("click", () => importCsv(false));
+async function importCsv(append) {
   const fileInput = get("csv-file");
-  const button = get("import-csv");
+  const buttons = [get("append-csv"), get("import-csv")];
   const status = get("import-status");
   const file = fileInput.files[0];
   if (!file || file.size === 0 || file.size > 65536) {
@@ -231,7 +271,7 @@ get("import-csv").addEventListener("click", async () => {
   const current = revision;
   get("generate").disabled = true;
   status.textContent = "Checking CSV…";
-  button.disabled = true;
+  for (const button of buttons) button.disabled = true;
   try {
     const response = await fetch("/import-csv", {
       method: "POST",
@@ -240,38 +280,64 @@ get("import-csv").addEventListener("click", async () => {
     });
     const result = await response.json();
     if (current !== revision || fileInput.files[0] !== file) {
-      status.textContent = "The draft or selected file changed. Import again to replace the rows.";
+      status.textContent = "The draft or selected file changed. Choose the import action again.";
       return;
     }
     if (!response.ok) {
       status.textContent = result.error;
       return;
     }
-    sources.replaceChildren();
-    rows.replaceChildren();
-    nextSource = 1;
-    const sourceIds = new Map();
-    for (const source of result.sources) {
+    const clearRows = !append || blankStarter();
+    const plan = append ? planAppend(result) : null;
+    const observations = plan ? plan.observations : result.observations;
+    const sourcesToAdd = plan ? [...plan.newSources.values()] : result.sources;
+    const skipped = result.observations.length - observations.length;
+    if (!observations.length) {
+      status.textContent = "No new observations. Matching rows are already in the draft; existing roles were kept.";
+      return;
+    }
+    if (!clearRows && (rows.childElementCount + observations.length > maxRows
+        || sources.childElementCount + sourcesToAdd.length > maxRows
+        || nextSource + sourcesToAdd.length - 1 > 999999)) {
+      status.textContent = "Cannot add this CSV within the draft limits (12 observations and 12 sources). No rows changed.";
+      return;
+    }
+    if (clearRows) {
+      sources.replaceChildren();
+      rows.replaceChildren();
+      nextSource = 1;
+    }
+    const sourceIds = plan ? plan.sourceIds : new Map();
+    const addedByKey = new Map();
+    for (const source of sourcesToAdd) {
       const row = addSource(false);
       row.querySelector(".reference").value = source.reference;
       row.querySelector(".kind").value = source.kind;
+      addedByKey.set(sourceKey(source.kind, source.reference), row.dataset.id);
       sourceIds.set(source.id, row.dataset.id);
     }
-    for (const observation of result.observations) {
+    if (plan) {
+      for (const [id, key] of plan.incoming) {
+        if (addedByKey.has(key)) sourceIds.set(id, addedByKey.get(key));
+      }
+    }
+    for (const observation of observations) {
       const row = addObservation(false);
       row.querySelector(".observation").value = observation.text;
       row.querySelector(".role").value = observation.role;
       row.querySelector(".source").value = sourceIds.get(observation.source);
     }
     fileInput.value = "";
-    status.textContent = `Imported ${result.observations.length} observations and ${result.sources.length} sources. Review the rows before generating a brief.`;
+    status.textContent = append
+      ? `New observations: ${observations.length}. New sources: ${sourcesToAdd.length}. Duplicates skipped: ${skipped}. Review your conclusion and next step, then check references again.`
+      : `Imported ${observations.length} observations and ${sourcesToAdd.length} sources. Review the rows before generating a brief.`;
   } catch {
     status.textContent = "Could not import the CSV. Is the local workbench still running?";
   } finally {
-    button.disabled = false;
+    for (const button of buttons) button.disabled = false;
     get("generate").disabled = false;
   }
-});
+}
 function reportElement(tag, text) {
   const element = document.createElement(tag);
   if (text !== undefined) element.textContent = text;
