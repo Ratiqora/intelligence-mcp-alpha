@@ -1,0 +1,2 @@
+observation,source_reference,source_type,role
+"In a matched staging replay on Safari and Chrome, wallet checkout stalled when the callback was disabled and completed when it was enabled. The account, cart, and build stayed the same.","Fictional matched checkout replay QA-104, row 4",fictional,context
