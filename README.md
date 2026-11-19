@@ -5,7 +5,7 @@
 | Start here | What you can do |
 | --- | --- |
 | **[Read a sample decision brief](examples/decision_workbench/samples/checkout-decision-brief.md)** | See how one successful checkout challenges a proposed Safari-wide workaround. Read it right here on GitHub. |
-| **[Download the one-minute browser demo](https://github.com/Ratiqora/intelligence-mcp-alpha/releases/download/v0.1.0-alpha.4/ratiqora-alpha4-demo.html)** | Open the HTML file and decide whether to change a photo upload limit. No installation, Python, or API key. |
+| **[Try the one-minute browser demo](https://ratiqora.github.io/intelligence-mcp-alpha/)** | Decide whether to change a photo upload limit, straight from your browser. Prefer to try it offline? [Download the same HTML file](https://github.com/Ratiqora/intelligence-mcp-alpha/releases/download/v0.1.0-alpha.4/ratiqora-alpha4-demo.html). |
 | **[Run the local MCP server](docs/alpha4-quickstart.md)** | Install the Alpha packages and run the synthetic trial on Windows or Linux. |
 
 In the checkout example, one Safari customer got stuck, another completed checkout, and a similar stall occurred in Chrome. Follow the counterexample to its source and see why changing the experience for every Safari user would outrun the evidence.
@@ -42,7 +42,7 @@ Alpha 4 is an experimental single-project, in-memory runtime. Use synthetic data
 
 - **Demo feedback:** [Tell us what was clear and where you got stuck](https://github.com/Ratiqora/intelligence-mcp-alpha/issues/new?title=Alpha+4+demo+feedback&body=What+did+you+think+the+demo+was+asking+you+to+do+when+it+first+opened%3F%0A%0AWhat+product+decision%2C+if+any%2C+did+it+help+you+make%3F%0A%0AWhere%2C+if+anywhere%2C+did+you+get+stuck%3F%0A%0APlease+leave+out+personal+information+and+real+customer+data.%0A). This opens a public GitHub issue draft.
 - **Docs and packaging:** [Test the quickstart on a fresh Windows or Linux environment](https://github.com/Ratiqora/intelligence-mcp-alpha/issues/3) and report the first step that could be clearer.
-- **MCP examples:** [Propose a checkout scenario with conflicting reports](https://github.com/Ratiqora/intelligence-mcp-alpha/issues/4) and show what conclusion the evidence supports.
+- **Discuss the checkout story:** [Which observation changed what you would test next?](https://github.com/Ratiqora/intelligence-mcp-alpha/discussions/21) Read the fictional case and share your reasoning. No install required.
 
 Write UI text, documentation, examples, and test fixtures in English. Use synthetic data and include reproduction steps with a focused PR. Never include real customer data or raw evidence.
 

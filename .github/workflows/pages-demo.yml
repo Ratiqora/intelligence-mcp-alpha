@@ -1,0 +1,50 @@
+name: Public browser demo
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/pages-demo.yml
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/pages-demo.yml
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  prepare:
+    name: Verify the English demo
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Stage only the published demo
+        working-directory: ${{ runner.temp }}
+        run: |
+          mkdir site
+          curl --fail --silent --show-error --location --retry 3 --output site/index.html \
+            https://github.com/Ratiqora/intelligence-mcp-alpha/releases/download/v0.1.0-alpha.4/ratiqora-alpha4-demo.html
+          echo 'e6dd25c4178159963368ec161d6ddf956a72f3a4cb1c9c506a26ed8e8687e737  site/index.html' | sha256sum --check --strict
+      - name: Package the verified page
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
+        with:
+          path: ${{ runner.temp }}/site
+
+  deploy:
+    name: Publish the demo
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency: pages-demo
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Deploy the single-page site
+        id: deploy
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
