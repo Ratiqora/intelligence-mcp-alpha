@@ -90,6 +90,31 @@ class WorkbenchTest(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertNotIn("S2", result["markdown"])
 
+    def test_reopen_round_trip_preserves_authorship_and_rebuilds_report(self):
+        self.draft["sources"][1]["id"] = "S9"
+        self.draft["observations"][1]["source"] = "S9"
+        status, generated = self.submit({**self.draft, "unrecognized": "discard this"})
+        self.assertEqual(status, 200)
+        saved = generated["editable"]
+        self.assertEqual(saved, {"format": "ratiqora-decision-brief/v1", "brief": self.draft})
+        status, cache, body = self.request("POST", "/open-brief", json.dumps({
+            **saved, "preview": {"finding": "Unvalidated conclusion"}, "markdown": "Untrusted"
+        }))
+        self.assertEqual((status, cache), (200, "no-store"))
+        self.assertEqual(json.loads(body), generated)
+
+    def test_reopen_rejects_unsupported_files_and_broken_references(self):
+        _, generated = self.submit(self.draft)
+        invalid = deepcopy(generated["editable"])
+        invalid["brief"]["observations"][0]["source"] = "S99"
+        for data in (self.draft, {"format": "future", "brief": self.draft}, invalid):
+            with self.subTest():
+                status, _, body = self.request("POST", "/open-brief", json.dumps(data))
+                self.assertEqual(status, 400)
+                self.assertEqual(set(json.loads(body)), {"error"})
+        status, _, _ = self.request("POST", "/open-brief", json.dumps(generated["editable"]), {})
+        self.assertEqual(status, 403)
+
     def test_hypothesis_and_conclusion_stay_distinct(self):
         status, result = self.submit(self.draft)
         self.assertEqual(status, 200)

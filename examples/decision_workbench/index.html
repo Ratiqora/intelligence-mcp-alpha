@@ -45,9 +45,17 @@ legend{padding:0 6px;font-weight:700}
 <h1>Build a decision brief</h1>
 <p>Bring your own decision and shareable observations. Link each observation to a listed source, check the references, then download a brief.</p>
 </header>
-<p class="hint" id="privacy">Use fictional or public material only. Validation runs on your computer and keeps no saved draft. Your entries appear in the downloaded file. You choose the hypothesis, assign each observation a role, and write your conclusion.</p>
+<p class="hint" id="privacy">Use fictional or public material only. Validation runs on your computer and does not save automatically. Your entries appear in the downloaded file. You choose the hypothesis, assign each observation a role, and write your conclusion.</p>
 <p class="hint" id="startup" hidden>Start the local workbench with Python and open its local address to validate and export.</p>
 <form id="brief" aria-describedby="privacy" autocomplete="off">
+<details class="card">
+<summary>Continue a saved brief</summary>
+<p class="hint" id="open-help">Choose an editable brief saved from this Workbench. Its references are checked before anything in this form is replaced.</p>
+<label for="brief-file">Editable brief (.json)</label>
+<input type="file" id="brief-file" accept=".json,application/json" aria-describedby="open-help">
+<button type="button" id="open-brief">Open editable brief</button>
+<p id="open-status" role="status"></p>
+</details>
 <section class="card" aria-labelledby="decision-heading">
 <h2 id="decision-heading">1. Define the decision</h2>
 <label for="question">Decision question</label>
@@ -93,8 +101,9 @@ and role columns. Use fictional or public for source_type, and supports, challen
 <div class="actions">
 <button class="primary" id="download-html" type="button">Download HTML for review</button>
 <button id="download" type="button">Download Markdown</button>
+<button id="save-editable" type="button">Save editable brief</button>
 </div>
-<p class="hint">The HTML opens offline in a browser. Both files include your entries; review them before sharing.</p>
+<p class="hint">The HTML opens offline in a browser. Save the JSON file to continue editing later. All downloads include your entries; review them before sharing.</p>
 </section>
 </main>
 <template id="source-template">
@@ -137,6 +146,7 @@ const rows = get("observations");
 const sources = get("sources");
 const token = "__WORKBENCH_TOKEN__";
 const maxRows = 12;
+const decisionFields = ["question", "hypothesis", "finding", "unknowns", "next"];
 let nextSource = 1;
 let revision = 0;
 let validatedReport = null;
@@ -168,10 +178,11 @@ function updateSources() {
     select.value = selected;
   }
 }
-function addSource(focus = true) {
-  if (sources.children.length >= maxRows || nextSource > 999999) return;
+function addSource(focus = true, savedId = null) {
+  if (sources.children.length >= maxRows || (!savedId && nextSource > 999999)) return;
   const row = get("source-template").content.firstElementChild.cloneNode(true);
-  row.dataset.id = "S" + nextSource++;
+  row.dataset.id = savedId ?? "S" + nextSource++;
+  if (savedId) nextSource = Math.max(nextSource, Number(savedId.slice(1)) + 1);
   row.querySelector("legend").textContent = "Source " + row.dataset.id;
   row.querySelector(".remove").setAttribute("aria-label", "Remove source " + row.dataset.id);
   row.querySelector(".remove").addEventListener("click", () => {
@@ -214,7 +225,7 @@ function addObservation(focus = true) {
   return row;
 }
 function onDraftEdit(event) {
-  if (event.target !== get("csv-file")) resetPreview();
+  if (event.target.type !== "file") resetPreview();
 }
 form.addEventListener("input", onDraftEdit);
 form.addEventListener("change", onDraftEdit);
@@ -408,7 +419,7 @@ form.addEventListener("submit", async event => {
   resetPreview();
   const current = revision;
   const data = Object.fromEntries(
-    ["question", "hypothesis", "finding", "unknowns", "next"].map(id => [id, get(id).value])
+    decisionFields.map(id => [id, get(id).value])
   );
   data.sources = Array.from(sources.children, row => ({
     id: row.dataset.id,
@@ -445,6 +456,65 @@ form.addEventListener("submit", async event => {
       get("status").focus();
     }
   }
+});
+get("open-brief").addEventListener("click", async () => {
+  const input = get("brief-file"), file = input.files[0], status = get("open-status");
+  if (!file || !file.size || file.size > 65536) {
+    status.textContent = "Choose a nonempty editable JSON brief up to 64 KiB.";
+    return;
+  }
+  const current = revision;
+  get("open-brief").disabled = true;
+  status.textContent = "Checking the saved brief…";
+  try {
+    const response = await fetch("/open-brief", {
+      method: "POST", headers: {"Content-Type": "application/json", "X-Workbench-Token": token},
+      body: file,
+    });
+    const result = await response.json();
+    if (current !== revision || input.files[0] !== file) {
+      status.textContent = "The form or selected file changed. Open the file again.";
+      return;
+    }
+    if (!response.ok) {
+      status.textContent = result.error;
+      return;
+    }
+    if ((!blankStarter() || decisionFields.some(id => get(id).value))
+        && !window.confirm("Replace your current entries with the saved brief?")) {
+      status.textContent = "Opening cancelled. Your current brief is unchanged.";
+      return;
+    }
+    const draft = result.editable.brief;
+    resetPreview();
+    sources.replaceChildren();
+    rows.replaceChildren();
+    nextSource = 1;
+    for (const id of decisionFields) get(id).value = draft[id];
+    for (const source of draft.sources) {
+      const row = addSource(false, source.id);
+      row.querySelector(".kind").value = source.kind;
+      row.querySelector(".reference").value = source.reference;
+    }
+    for (const observation of draft.observations) {
+      const row = addObservation(false);
+      row.querySelector(".observation").value = observation.text;
+      row.querySelector(".role").value = observation.role;
+      row.querySelector(".source").value = observation.source;
+    }
+    input.value = "";
+    get("csv-file").value = "";
+    get("import-status").textContent = "";
+    status.textContent = "Brief reopened. Edit your decision or add new observations, then check references again.";
+    get("question").focus();
+  } catch {
+    status.textContent = "Could not open the file. Check that the local Workbench is running.";
+  } finally {
+    get("open-brief").disabled = false;
+  }
+});
+get("save-editable").addEventListener("click", () => {
+  if (validatedReport) downloadReport(JSON.stringify(validatedReport.editable), "application/json", "json");
 });
 function downloadReport(content, type, extension) {
   const url = URL.createObjectURL(new Blob([content], {type}));
