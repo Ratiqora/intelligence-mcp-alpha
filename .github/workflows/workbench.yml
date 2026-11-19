@@ -1,0 +1,35 @@
+name: Workbench checks
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - examples/decision_workbench/**
+      - .github/workflows/workbench.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Workbench HTTP tests (Python 3.13)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+          cache: ''
+      - name: Install the verified public Alpha 4 Core wheel
+        working-directory: ${{ runner.temp }}
+        run: |
+          wheel=ratiqora_intelligence_core-0.2.0-py3-none-any.whl
+          curl --fail --silent --show-error --location --retry 3 --output "$wheel" \
+            "https://github.com/Ratiqora/intelligence-mcp-alpha/releases/download/v0.1.0-alpha.4/$wheel"
+          echo "015805f60d811646eed291873f4fb8244664e1038c172f832529ae4e4d99525f  $wheel" | sha256sum --check --strict
+          python -m pip --disable-pip-version-check install --no-index --no-deps "./$wheel"
+      - name: Run Workbench tests
+        run: python -B examples/decision_workbench/check.py -v
