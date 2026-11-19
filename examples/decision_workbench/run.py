@@ -26,6 +26,7 @@ from intelligence_core.contracts import (
 )
 
 MAX_BODY = 65536
+EDITABLE_FORMAT = "ratiqora-decision-brief/v1"
 SOURCE_ID = re.compile(r"S[1-9][0-9]{0,5}")
 ROLES = {
     "supports": "Supports the hypothesis",
@@ -216,7 +217,29 @@ def build_brief(data):
             for source in sources.values()
         ],
     }
-    return {"markdown": "\n".join(report), "preview": preview}
+    # Save only the fields used to author the brief, never the runtime graph or session token.
+    draft = {
+        key: preview[key] for key in ("question", "hypothesis", "finding", "unknowns", "next")
+    }
+    draft["sources"] = [
+        {"id": str(s.id), "kind": s.source.source_kind, "reference": s.source.external_reference}
+        for s in sources.values()
+    ]
+    draft["observations"] = [
+        {"text": o["summary"], "role": o["role"], "source": o["source"]}
+        for o in preview["observations"]
+    ]
+    return {
+        "markdown": "\n".join(report), "preview": preview,
+        "editable": {"format": EDITABLE_FORMAT, "brief": draft},
+    }
+
+
+def open_editable(data):
+    if not isinstance(data, dict) or data.get("format") != EDITABLE_FORMAT:
+        raise BriefError("Choose a supported Ratiqora editable brief (.json).")
+    # Ignore any supplied preview or report; regenerate from the validated author inputs.
+    return build_brief(data.get("brief"))
 
 
 def handler(page, token, port):
@@ -253,7 +276,7 @@ def handler(page, token, port):
 
         def do_POST(self):
             if (
-                self.path not in ("/brief", "/import-csv")
+                self.path not in ("/brief", "/import-csv", "/open-brief")
                 or self.headers.get("Host") != host
                 or self.headers.get("Origin") != origin
                 or not compare_digest(
@@ -275,10 +298,11 @@ def handler(page, token, port):
                 body = self.rfile.read(int(length))
                 if len(body) != int(length):
                     raise BriefError("The request is incomplete.")
-                result = (
-                    parse_observations_csv(body) if importing
-                    else build_brief(json.loads(body.decode("utf-8")))
-                )
+                if importing:
+                    result = parse_observations_csv(body)
+                else:
+                    data = json.loads(body.decode("utf-8"))
+                    result = open_editable(data) if self.path == "/open-brief" else build_brief(data)
             except BriefError as error:
                 self.send_json(400, {"error": str(error)})
             except (ValueError, RecursionError):

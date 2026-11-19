@@ -26,9 +26,19 @@ It does not open the cited material, judge the finding, or check whether the ass
 The evidence records bind author-entered observation summaries in memory. The report includes those
 summaries and source references with no separate raw evidence payload or integrity digest.
 
-Use public or fictional material. The workbench listens only on your machine. It creates no saved
-drafts and does not fetch sources. Both download formats include your entries. Review them
-before sharing, and use public or fictional material only.
+Use public or fictional material. The workbench listens only on your machine. It does not save drafts
+automatically or fetch sources. All downloads include your entries; review them before sharing.
+
+## Continue a brief another day
+
+After checking references, choose **Save editable brief**. Keep the downloaded JSON file
+on your device. In a fresh local Workbench, choose **Continue a saved brief**, select that
+file, and click **Open editable brief**. The Workbench rechecks the references and asks
+before replacing existing entries. Add the new observation, revise the next step, and
+check references again before downloading the updated brief.
+
+The file contains your decision text, observation summaries, roles and source references.
+It does not contain cited documents. HTML and Markdown are for readers; use JSON to resume editing.
 
 ## Import multiple observations
 
