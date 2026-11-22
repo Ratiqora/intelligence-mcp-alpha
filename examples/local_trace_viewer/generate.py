@@ -172,7 +172,14 @@ async def scenario(
             ):
                 await session.initialize()
 
+                # This example also supports the immutable Alpha 4 release wheels.
+                tools = (await session.list_tools()).tools
+                declared = {t.name for t in tools
+                            if "producer_kind" in t.input_schema.get("properties", {})}
+
                 async def call(name: str, arguments: dict[str, object]) -> dict[str, object]:
+                    if name in declared:
+                        arguments = {**arguments, "producer_kind": "deterministic"}
                     result = await session.call_tool(name, arguments)
                     check_private(str(result))
                     if result.is_error or result.structured_content is None:
@@ -323,9 +330,9 @@ def render_decision_brief(brief: dict[str, object], case: DecisionCase) -> str:
         "",
         *source_notes,
         "",
-        "Fictional example. The observations and their roles were written for this scenario. "
+        ("Fictional example. The observations and their roles were written for this scenario. "
         "MCP checks the links and keeps raw evidence out of the report; "
-        "valid links do not establish that a claim is true.",
+        "valid links do not establish that a claim is true."),
     ]
     return "\n".join(lines) + "\n"
 

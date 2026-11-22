@@ -56,3 +56,25 @@ source instance and collector method: 256 each; external reference: 4096;
 timestamp input: 64; expected SHA-256 text: 71. Application size, list and
 project-capacity errors use `RQ-LIMIT-001`. They do not echo the argument.
 These checks operate on decoded arguments; they do not limit transport frames.
+
+### Declare who produced a statement (source checkout)
+
+For `register_item`, `register_finding` and `register_insight`, declare who or
+what produced the **text**, independently of the method that registers it:
+
+| producer_kind | Required details |
+| --- | --- |
+| `human` | `actor_ref`: a shareable pseudonymous author reference |
+| `ai_assisted` | `provider` and `model`: supply the actual values |
+| `deterministic` | Explicitly select only for rule-generated text, such as the trial fixture |
+
+The producer fields are visible in tool and resource responses. Do not supply
+secrets or private identifiers. Each detail is limited to 256 UTF-8 bytes.
+Provider and model are valid only for AI assistance. The returned
+`producer.attribution = "caller_declared"` is not identity verification;
+`producer.method` identifies the registration operation.
+
+**Client migration:** Earlier clients could omit attribution. The checkout
+now rejects a missing or incomplete declaration without recording the entity.
+Do not substitute placeholder identities. The published Alpha 4 wheels keep
+their original interface; use tool discovery when supporting both versions.
