@@ -13,6 +13,8 @@ from intelligence_core.contracts import (
     validate_graph,
 )
 
+MAX_PROJECT_ENTITIES = 256
+
 Entity = SourceRecord | RawEvidence | IntelligenceItem | Finding | Insight
 EntityT = TypeVar("EntityT", bound=Entity)
 MODEL_SUPPLIED_SYNTHETIC = "model_supplied_synthetic"
@@ -86,6 +88,8 @@ class Workspace:
         key = str(entity.id)
         if self.get(key) is not None:
             raise ValueError(f"duplicate Core entity id: {key}")
+        if sum(len(bucket) for bucket in self._collections()) >= MAX_PROJECT_ENTITIES:
+            raise ValueError("project entity limit reached")
         target[key] = entity
         return entity
 

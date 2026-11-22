@@ -33,3 +33,19 @@ commitment for downstream private integrations.
 A release candidate must pass tests, lint, build, packaged-client smoke tests, fresh artifact
 installation, and privacy/secret checks. Publication or visibility changes require separate founder
 authorization.
+## Limits and trace reads in the source checkout
+
+The local MCP server accepts up to 64 KiB of UTF-8 model-supplied synthetic
+evidence, 16 KiB per normalized observation or finding/insight statement,
+256 IDs per reference list, and 256 entities total per project. A confirmed
+reset clears the project. The separate trusted-host file limit remains 1 MiB.
+These are application-level checks, not transport limits. The Alpha 4 release
+wheels predate the new model-input and project limits.
+
+A trace read returns the requested entity and its **direct** references.
+For example, after registering insight i1 → finding f1 → item o1 → evidence
+e1 → source s1, read `ratiqora://trace/i1`, follow its supporting finding ID,
+then the finding’s item ID, the item’s evidence ID and the evidence’s
+`source_record_id`. Each hop is a separate read. Evidence bytes are redacted;
+authored summaries and statements are visible. A matching hash verifies the
+submitted bytes, not the author's identity, public status or source authenticity.
