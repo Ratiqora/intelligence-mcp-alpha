@@ -1,4 +1,4 @@
-# Exact Alpha 4 runtime resolution reviewed on Python 3.10 and Python 3.13.
+# Runtime pins for this source checkout. Use the release asset constraints with Alpha 4 wheels.
 # Install the Core and MCP wheels with: pip install -c requirements/alpha-runtime-constraints.txt ...
 annotated-types==0.8.0
 anyio==4.15.1
@@ -24,7 +24,7 @@ python-multipart==0.0.32
 pywin32==312; sys_platform == "win32"
 referencing==0.37.0
 ratiqora-intelligence-core==0.2.0
-ratiqora-intelligence-mcp==0.1.0a4
+ratiqora-intelligence-mcp==0.1.0a5.dev0
 rpds-py==0.30.0
 sse-starlette==3.4.11
 starlette==1.6.0

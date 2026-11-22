@@ -66,6 +66,26 @@ production certification. To clean up, close the trial and remove the dedicated 
 For scope, reporting, and rollback see the [Alpha boundary](alpha-release-boundary.md),
 [security policy](../SECURITY.md).
 
+## Run the development wheel from a checkout
+
+The steps above use the released MCP `0.1.0a4` and its release constraints.
+To try the current development version (`0.1.0a5.dev0`), clone this public repo
+and run one command from its root. You need Git, Python with venv/pip, and
+network access to the public release and Python package index. No API key is needed.
+
+| Platform | Command |
+| --- | --- |
+| Linux | `python3.13 -I scripts/check_installed_wheel.py` |
+| Windows PowerShell | `py -3.13 -I scripts/check_installed_wheel.py` |
+
+Use `python3.10` or `py -3.10` for Python 3.10. The check builds the committed
+revision (excluding uncommitted edits), verifies the public Core wheel by its
+pinned SHA-256, then installs both wheels in a temporary environment and runs
+the installed trial outside the source directory. Its last line reports the
+commit, built wheel hash, server version, `valid: true`, and one source,
+evidence, item, finding and insight. Temporary environments are removed on exit.
+A successful trial validates links in a fictional graph; it does not authenticate a source.
+
 ### Test a source checkout
 
 From the repository root, use a fresh Python 3.13 environment. Follow the

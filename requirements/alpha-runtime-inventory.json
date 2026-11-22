@@ -27,7 +27,7 @@
     {"name": "pywin32", "version": "312", "license": "PSF", "marker": "sys_platform == 'win32'"},
     {"name": "referencing", "version": "0.37.0", "license": "MIT"},
     {"name": "ratiqora-intelligence-core", "version": "0.2.0", "license": "Apache-2.0"},
-    {"name": "ratiqora-intelligence-mcp", "version": "0.1.0a4", "license": "Apache-2.0"},
+    {"name": "ratiqora-intelligence-mcp", "version": "0.1.0a5.dev0", "license": "Apache-2.0"},
     {"name": "rpds-py", "version": "0.30.0", "license": "MIT"},
     {"name": "sse-starlette", "version": "3.4.11", "license": "BSD-3-Clause"},
     {"name": "starlette", "version": "1.6.0", "license": "BSD-3-Clause"},

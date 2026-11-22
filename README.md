@@ -30,6 +30,14 @@ The walkthrough’s three-report scenario can be turned into a [one-page decisio
 
 Run the [local Decision Workbench](examples/decision_workbench/README.md) to link your observations to public or fictional source references. Try the [sample checkout CSV](examples/decision_workbench/samples/checkout-observations.csv) before entering your own observations. Ratiqora checks the internal links before you download an offline HTML or Markdown brief. You mark which observations support or challenge your hypothesis, then write your own conclusion.
 
+## Which version am I running?
+
+The [Alpha 4 downloads](https://github.com/Ratiqora/intelligence-mcp-alpha/releases/tag/v0.1.0-alpha.4)
+are MCP `0.1.0a4`. This checkout builds `0.1.0a5.dev0`, which includes
+caller-declared authorship and the newer MCP input limits. To try the development
+wheel, use the [one-command checkout trial](docs/alpha4-quickstart.md#run-the-development-wheel-from-a-checkout).
+The browser demo needs no installation.
+
 ## Try it
 
 1. Download the two wheels, constraints and checksum file from [Alpha 4](https://github.com/Ratiqora/intelligence-mcp-alpha/releases/tag/v0.1.0-alpha.4).
