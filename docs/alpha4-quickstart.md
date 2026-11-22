@@ -65,3 +65,18 @@ Use only synthetic inputs for this quickstart. The trial runs locally over stdio
 production certification. To clean up, close the trial and remove the dedicated `.venv`.
 For scope, reporting, and rollback see the [Alpha boundary](alpha-release-boundary.md),
 [security policy](../SECURITY.md).
+
+### Test a source checkout
+
+From the repository root, use a fresh Python 3.13 environment. Follow the
+download and checksum instructions above for the public Core wheel. Install
+that verified wheel, then run:
+
+```sh
+python -m pip install -c requirements/alpha-runtime-constraints.txt mcp==2.2.0 ruff==0.16.8
+python -m unittest discover -s tests -v
+python -m ruff check intelligence_mcp tests
+```
+
+These tests start the server from your checkout over stdio. Core's Python
+implementation, including graph validation, is readable inside the Core wheel.
