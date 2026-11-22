@@ -64,3 +64,11 @@ observation rows. If an import is rejected, the draft and any validated preview 
 The replay becomes O4 with source S4. Keep the Safari conclusion, change the next
 step to checking the wallet callback in staging, and generate a new brief. Adding the
 same replay again will not count it as a second observation.
+
+### Use the decision in a meeting
+
+After checking references, choose the observation to share and mark the decision
+as changed, unchanged, or a first decision. Review the three lines and choose
+**Copy decision update** to paste them into a team document. The last observation
+is selected initially; the Workbench does not infer what changed. A source
+reference is a citation supplied by the author. Recheck after editing the draft.
