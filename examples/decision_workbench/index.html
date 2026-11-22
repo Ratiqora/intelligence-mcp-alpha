@@ -98,6 +98,15 @@ and role columns. Use fictional or public for source_type, and supports, challen
 <section class="card" id="preview" aria-labelledby="report-heading" hidden>
 <h2 id="report-heading" tabindex="-1">Decision brief preview</h2>
 <div id="report-content"></div>
+<fieldset><legend>Update for your team</legend>
+<label>Observation to share <select id="update-observation"></select></label>
+<label>How did the decision change?
+<select id="update-decision"><option value="">Choose a status</option>
+<option>Unchanged</option><option>Changed</option><option>First decision</option></select></label>
+<label>Text to share <textarea id="update-text" readonly rows="4"></textarea></label>
+<button type="button" id="copy-update" disabled>Copy decision update</button>
+<span role="status" id="copy-status"></span>
+</fieldset>
 <div class="actions">
 <button class="primary" id="download-html" type="button">Download HTML for review</button>
 <button id="download" type="button">Download Markdown</button>
@@ -155,6 +164,9 @@ function resetPreview() {
   revision++;
   validatedReport = null;
   get("preview").hidden = true;
+  get("update-text").value = "";
+  get("copy-status").textContent = "";
+  get("copy-update").disabled = true;
   get("report-content").replaceChildren();
   get("status").textContent = "";
 }
@@ -447,6 +459,12 @@ form.addEventListener("submit", async event => {
     }
     get("report-content").replaceChildren(buildReport(result.preview, true));
     validatedReport = result;
+    const picker = get("update-observation");
+    picker.replaceChildren(...result.preview.observations.map((o, i) =>
+      new Option(o.id + ": " + o.summary, String(i))));
+    picker.selectedIndex = picker.options.length - 1;
+    get("update-decision").value = "";
+    refreshUpdate();
     get("preview").hidden = false;
     get("status").textContent = "References passed the structure check. Review and download.";
     get("report-heading").focus();
@@ -511,6 +529,35 @@ get("open-brief").addEventListener("click", async () => {
     status.textContent = "Could not open the file. Check that the local Workbench is running.";
   } finally {
     get("open-brief").disabled = false;
+  }
+});
+function refreshUpdate() {
+  const preview = validatedReport?.preview;
+  const observation = preview?.observations[get("update-observation").selectedIndex];
+  const decision = get("update-decision").value;
+  const source = preview?.sources.find(s => s.id === observation?.source);
+  const line = text => text.replace(/\s+/g, " ").trim();
+  get("copy-status").textContent = "";
+  get("update-text").value = observation && source && decision ? [
+    "Evidence: " + line(observation.summary) + " (" + source.id + ": " + line(source.reference) + ")",
+    "Decision (" + decision.toLowerCase() + "): " + line(preview.finding),
+    "Next step: " + line(preview.next),
+  ].join("\n") : "";
+  get("copy-update").disabled = !get("update-text").value;
+}
+get("update-observation").addEventListener("change", refreshUpdate);
+get("update-decision").addEventListener("change", refreshUpdate);
+get("copy-update").addEventListener("click", async () => {
+  const field = get("update-text"), text = field.value;
+  if (!validatedReport || !text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+    if (field.value === text) get("copy-status").textContent = "Decision update copied.";
+  } catch {
+    if (field.value !== text) return;
+    field.focus();
+    field.select();
+    get("copy-status").textContent = "Copy the selected text using your browser’s Copy command.";
   }
 });
 get("save-editable").addEventListener("click", () => {

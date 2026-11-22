@@ -65,7 +65,12 @@ def rows(value, name):
 
 def plain(value):
     text = " ".join(value.split())
-    return re.sub(r"[&<>`*_~\[\]\\|#!:+.=-]", lambda m: f"&#{ord(m[0])};", text)
+    # Preserve ordinary prose (Re-test, 10:30, final periods). Neutralize
+    # Markdown controls, line-leading lists/rules and automatic links.
+    pattern = r"[&<>`*_~\[\]\\|#!+=@]|^[-:]|:(?=//)|(?<=\w)\.(?=\w)"
+    escaped = re.sub(pattern, lambda m: f"&#{ord(m[0])};", text)
+    return re.sub(r"^(\d{1,9})([.)])(?=\s)",
+                  lambda m: f"{m[1]}&#{ord(m[2])};", escaped)
 
 
 def parse_observations_csv(body):
