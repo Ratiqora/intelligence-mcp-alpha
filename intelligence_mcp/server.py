@@ -26,10 +26,30 @@ from . import __version__
 from .diagnostics import DiagnosticRecorder
 from .host_ingestion import TrustedTextPreload, preload_trusted_text
 from .views import entity_view, host_ingestion_view, project_view, trace_view
-from .workspace import EvidenceBoundaryError, Workspace
+from .workspace import MAX_PROJECT_ENTITIES, EvidenceBoundaryError, Workspace
+
+MAX_SYNTHETIC_BYTES = 64 * 1024
+MAX_SUMMARY_BYTES = 16 * 1024
+
+
+def _bounded_bytes(value: str, limit: int) -> bytes:
+    # Reject obviously large strings before making a UTF-8 copy.
+    if len(value) > limit:
+        raise EvidenceBoundaryError("input exceeds the size limit")
+    payload = value.encode("utf-8")
+    if len(payload) > limit:
+        raise EvidenceBoundaryError("input exceeds the size limit")
+    return payload
+
+
+def _summary(value: str) -> str:
+    _bounded_bytes(value, MAX_SUMMARY_BYTES)
+    return value
 
 
 def _ids(values: list[str]) -> tuple[CoreId, ...]:
+    if len(values) > MAX_PROJECT_ENTITIES:
+        raise EvidenceBoundaryError("too many references")
     return tuple(CoreId(value) for value in values)
 
 
@@ -129,7 +149,7 @@ def create_server(workspace: Workspace | None = None) -> MCPServer:
             raise EvidenceBoundaryError(
                 "model-supplied evidence requires a synthetic_document source"
             )
-        payload = synthetic_content.encode("utf-8")
+        payload = _bounded_bytes(synthetic_content, MAX_SYNTHETIC_BYTES)
         actual_integrity = f"sha256:{sha256(payload).hexdigest()}"
         if not compare_digest(actual_integrity, expected_integrity):
             raise EvidenceBoundaryError("evidence integrity does not match")
@@ -152,7 +172,7 @@ def create_server(workspace: Workspace | None = None) -> MCPServer:
         """Register a normalized intelligence item linked to evidence."""
         entity = IntelligenceItem(
             id=CoreId(item_id),
-            normalized_content=normalized_content,
+            normalized_content=_summary(normalized_content),
             evidence_ids=_ids(evidence_ids),
             producer=_deterministic("mcp.register_item"),
         )
@@ -169,7 +189,7 @@ def create_server(workspace: Workspace | None = None) -> MCPServer:
         """Register a finding with explicit item and evidence support."""
         entity = Finding(
             id=CoreId(finding_id),
-            statement=statement,
+            statement=_summary(statement),
             supporting_item_ids=_ids(supporting_item_ids),
             supporting_evidence_ids=_ids(supporting_evidence_ids),
             producer=_deterministic("mcp.register_finding"),
@@ -187,7 +207,7 @@ def create_server(workspace: Workspace | None = None) -> MCPServer:
         """Register an insight with explicit finding and evidence support."""
         entity = Insight(
             id=CoreId(insight_id),
-            statement=statement,
+            statement=_summary(statement),
             supporting_finding_ids=_ids(supporting_finding_ids),
             supporting_evidence_ids=_ids(supporting_evidence_ids),
             producer=_deterministic("mcp.register_insight"),
