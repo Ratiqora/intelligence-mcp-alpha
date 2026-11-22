@@ -106,10 +106,12 @@ async def run_trial() -> dict[str, object]:
                 },
             )
             validation = await _call(session, "validate_project", {})
+            support = await _call(session, "get_support_report", {})
 
     return {
         "scenario_id": "synthetic-independent-project-v1",
         "valid": validation["valid"],
+        "version": support["runtime"]["version"],
         "project_id": validation["project_id"],
         "counts": validation["counts"],
         "trace_ids": {
