@@ -49,3 +49,10 @@ then the finding’s item ID, the item’s evidence ID and the evidence’s
 `source_record_id`. Each hop is a separate read. Evidence bytes are redacted;
 authored summaries and statements are visible. A matching hash verifies the
 submitted bytes, not the author's identity, public status or source authenticity.
+
+In the development checkout the MCP text limits are measured in UTF-8 bytes:
+project/entity IDs (including references and reset confirmation), display name,
+source instance and collector method: 256 each; external reference: 4096;
+timestamp input: 64; expected SHA-256 text: 71. Application size, list and
+project-capacity errors use `RQ-LIMIT-001`. They do not echo the argument.
+These checks operate on decoded arguments; they do not limit transport frames.

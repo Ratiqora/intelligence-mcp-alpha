@@ -25,6 +25,16 @@ from mcp.server.mcpserver import MCPServer
 from . import __version__
 from .diagnostics import DiagnosticRecorder
 from .host_ingestion import TrustedTextPreload, preload_trusted_text
+from .limits import (
+    MAX_ID_BYTES,
+    MAX_LABEL_BYTES,
+    MAX_REFERENCE_BYTES,
+    MAX_TIMESTAMP_BYTES,
+    SHA256_TEXT_BYTES,
+    InputLimitError,
+    bounded_bytes,
+    bounded_text,
+)
 from .views import entity_view, host_ingestion_view, project_view, trace_view
 from .workspace import MAX_PROJECT_ENTITIES, EvidenceBoundaryError, Workspace
 
@@ -32,25 +42,14 @@ MAX_SYNTHETIC_BYTES = 64 * 1024
 MAX_SUMMARY_BYTES = 16 * 1024
 
 
-def _bounded_bytes(value: str, limit: int) -> bytes:
-    # Reject obviously large strings before making a UTF-8 copy.
-    if len(value) > limit:
-        raise EvidenceBoundaryError("input exceeds the size limit")
-    payload = value.encode("utf-8")
-    if len(payload) > limit:
-        raise EvidenceBoundaryError("input exceeds the size limit")
-    return payload
-
-
-def _summary(value: str) -> str:
-    _bounded_bytes(value, MAX_SUMMARY_BYTES)
-    return value
+def _id(value: str) -> CoreId:
+    return CoreId(bounded_text(value, MAX_ID_BYTES))
 
 
 def _ids(values: list[str]) -> tuple[CoreId, ...]:
     if len(values) > MAX_PROJECT_ENTITIES:
-        raise EvidenceBoundaryError("too many references")
-    return tuple(CoreId(value) for value in values)
+        raise InputLimitError("too many references")
+    return tuple(_id(value) for value in values)
 
 
 def _deterministic(method: str) -> ProducerRef:
@@ -62,6 +61,7 @@ def _deterministic(method: str) -> ProducerRef:
 
 
 def _parse_collected_at(value: str) -> datetime:
+    bounded_text(value, MAX_TIMESTAMP_BYTES)
     normalized = f"{value[:-1]}+00:00" if value.endswith("Z") else value
     collected_at = datetime.fromisoformat(normalized)
     if collected_at.tzinfo is None:
@@ -116,15 +116,15 @@ def create_server(workspace: Workspace | None = None) -> MCPServer:
     ) -> dict[str, object]:
         """Register provenance; collected_at must be timezone-aware ISO 8601."""
         entity = SourceRecord(
-            id=CoreId(source_id),
+            id=_id(source_id),
             source=SourceReference(
                 source_kind=source_kind,
-                source_instance=source_instance,
-                external_reference=external_reference,
+                source_instance=bounded_text(source_instance, MAX_LABEL_BYTES),
+                external_reference=bounded_text(external_reference, MAX_REFERENCE_BYTES),
             ),
             collection=CollectionContext(
                 collected_at=_parse_collected_at(collected_at),
-                collector_method=collector_method,
+                collector_method=bounded_text(collector_method, MAX_LABEL_BYTES),
                 collector_method_version="1",
             ),
         )
@@ -142,6 +142,8 @@ def create_server(workspace: Workspace | None = None) -> MCPServer:
         """Register integrity-checked synthetic input; never verbatim source capture."""
         if not isinstance(synthetic_content, str):
             raise EvidenceBoundaryError("synthetic_content must be a string")
+        bounded_text(source_record_id, MAX_ID_BYTES)
+        bounded_text(expected_integrity, SHA256_TEXT_BYTES)
         source = state.sources.get(source_record_id)
         if source is None:
             raise EvidenceBoundaryError("source must exist before evidence ingestion")
@@ -149,13 +151,13 @@ def create_server(workspace: Workspace | None = None) -> MCPServer:
             raise EvidenceBoundaryError(
                 "model-supplied evidence requires a synthetic_document source"
             )
-        payload = _bounded_bytes(synthetic_content, MAX_SYNTHETIC_BYTES)
+        payload = bounded_bytes(synthetic_content, MAX_SYNTHETIC_BYTES)
         actual_integrity = f"sha256:{sha256(payload).hexdigest()}"
         if not compare_digest(actual_integrity, expected_integrity):
             raise EvidenceBoundaryError("evidence integrity does not match")
         entity = RawEvidence(
-            id=CoreId(evidence_id),
-            source_record_id=CoreId(source_record_id),
+            id=_id(evidence_id),
+            source_record_id=_id(source_record_id),
             content=payload,
             integrity=actual_integrity,
         )
@@ -171,8 +173,8 @@ def create_server(workspace: Workspace | None = None) -> MCPServer:
     ) -> dict[str, object]:
         """Register a normalized intelligence item linked to evidence."""
         entity = IntelligenceItem(
-            id=CoreId(item_id),
-            normalized_content=_summary(normalized_content),
+            id=_id(item_id),
+            normalized_content=bounded_text(normalized_content, MAX_SUMMARY_BYTES),
             evidence_ids=_ids(evidence_ids),
             producer=_deterministic("mcp.register_item"),
         )
@@ -188,8 +190,8 @@ def create_server(workspace: Workspace | None = None) -> MCPServer:
     ) -> dict[str, object]:
         """Register a finding with explicit item and evidence support."""
         entity = Finding(
-            id=CoreId(finding_id),
-            statement=_summary(statement),
+            id=_id(finding_id),
+            statement=bounded_text(statement, MAX_SUMMARY_BYTES),
             supporting_item_ids=_ids(supporting_item_ids),
             supporting_evidence_ids=_ids(supporting_evidence_ids),
             producer=_deterministic("mcp.register_finding"),
@@ -206,8 +208,8 @@ def create_server(workspace: Workspace | None = None) -> MCPServer:
     ) -> dict[str, object]:
         """Register an insight with explicit finding and evidence support."""
         entity = Insight(
-            id=CoreId(insight_id),
-            statement=_summary(statement),
+            id=_id(insight_id),
+            statement=bounded_text(statement, MAX_SUMMARY_BYTES),
             supporting_finding_ids=_ids(supporting_finding_ids),
             supporting_evidence_ids=_ids(supporting_evidence_ids),
             producer=_deterministic("mcp.register_insight"),
@@ -278,7 +280,7 @@ def create_server(workspace: Workspace | None = None) -> MCPServer:
     @diagnostics.capture_resource("read_entity")
     def read_entity(entity_id: str) -> dict[str, object]:
         """Read one safe entity view; evidence content is always redacted."""
-        entity = state.get(entity_id)
+        entity = state.get(bounded_text(entity_id, MAX_ID_BYTES))
         if entity is None:
             raise ValueError("unknown entity")
         origin = (
@@ -292,7 +294,7 @@ def create_server(workspace: Workspace | None = None) -> MCPServer:
     @diagnostics.capture_resource("read_trace")
     def read_trace(entity_id: str) -> dict[str, object]:
         """Read the explicit references carried by an entity."""
-        return trace_view(state, entity_id)
+        return trace_view(state, bounded_text(entity_id, MAX_ID_BYTES))
 
     @mcp.resource("ratiqora://diagnostics")
     def read_diagnostics() -> dict[str, object]:
@@ -340,10 +342,10 @@ def _preloaded_workspace(
                 path=Path(args.trusted_text_file),
                 project_id=args.project_id,
                 display_name=args.display_name,
-                source_id=args.source_id,
-                evidence_id=args.evidence_id,
-                source_instance=args.source_instance,
-                external_reference=args.external_reference,
+                source_id=bounded_text(args.source_id, MAX_ID_BYTES),
+                evidence_id=bounded_text(args.evidence_id, MAX_ID_BYTES),
+                source_instance=bounded_text(args.source_instance, MAX_LABEL_BYTES),
+                external_reference=bounded_text(args.external_reference, MAX_REFERENCE_BYTES),
                 collected_at=_parse_collected_at(args.collected_at),
             ),
         )

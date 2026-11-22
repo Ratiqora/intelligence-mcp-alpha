@@ -12,6 +12,7 @@ from mcp.server.mcpserver.exceptions import ToolError
 from mcp.shared.exceptions import MCPError
 from mcp_types import INTERNAL_ERROR
 
+from .limits import InputLimitError
 from .workspace import EvidenceBoundaryError, ProjectLifecycleError
 
 P = ParamSpec("P")
@@ -34,6 +35,8 @@ class DiagnosticRecorder:
 
     @staticmethod
     def _classification(error: Exception) -> tuple[str, str]:
+        if isinstance(error, InputLimitError):
+            return ("input_limit", "RQ-LIMIT-001")
         if isinstance(error, EvidenceBoundaryError):
             return ("evidence_boundary", "RQ-EVIDENCE-001")
         if isinstance(error, ProjectLifecycleError):

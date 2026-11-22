@@ -13,6 +13,8 @@ from intelligence_core.contracts import (
     validate_graph,
 )
 
+from .limits import MAX_ID_BYTES, MAX_LABEL_BYTES, InputLimitError, bounded_text
+
 MAX_PROJECT_ENTITIES = 256
 
 Entity = SourceRecord | RawEvidence | IntelligenceItem | Finding | Insight
@@ -48,7 +50,9 @@ class Workspace:
 
     @staticmethod
     def _metadata(project_id: str, display_name: str | None) -> tuple[str, str | None]:
-        validated_id = str(CoreId(project_id))
+        validated_id = str(CoreId(bounded_text(project_id, MAX_ID_BYTES)))
+        if display_name is not None:
+            bounded_text(display_name, MAX_LABEL_BYTES)
         if display_name is not None and (
             not display_name or display_name != display_name.strip()
         ):
@@ -71,6 +75,7 @@ class Workspace:
         validated_id, validated_name = self._metadata(project_id, display_name)
         if self.project_id is None:
             raise ProjectLifecycleError("no project is active")
+        bounded_text(expected_current_project_id, MAX_ID_BYTES)
         if expected_current_project_id != self.project_id:
             raise ProjectLifecycleError("active project confirmation does not match")
         for collection in self._collections():
@@ -89,7 +94,7 @@ class Workspace:
         if self.get(key) is not None:
             raise ValueError(f"duplicate Core entity id: {key}")
         if sum(len(bucket) for bucket in self._collections()) >= MAX_PROJECT_ENTITIES:
-            raise ValueError("project entity limit reached")
+            raise InputLimitError("project entity limit reached")
         target[key] = entity
         return entity
 
