@@ -52,12 +52,17 @@ def _ids(values: list[str]) -> tuple[CoreId, ...]:
     return tuple(_id(value) for value in values)
 
 
-def _deterministic(method: str) -> ProducerRef:
-    return ProducerRef(
-        kind=ProducerKind.DETERMINISTIC,
-        method=method,
-        method_version="1",
-    )
+def _declared_producer(
+    operation: str, kind: str | None, actor_ref: str | None,
+    provider: str | None, model: str | None,
+) -> ProducerRef:
+    if kind is None or bounded_text(kind, MAX_LABEL_BYTES) not in {m.value for m in ProducerKind}:
+        raise ValueError("declare the producer kind")
+    for value in (actor_ref, provider, model):
+        if value is not None:
+            bounded_text(value, MAX_LABEL_BYTES)
+    return ProducerRef(kind=ProducerKind(kind), method=operation, method_version="1",
+                       actor_ref=actor_ref, provider=provider, model=model)
 
 
 def _parse_collected_at(value: str) -> datetime:
@@ -77,6 +82,9 @@ def create_server(workspace: Workspace | None = None) -> MCPServer:
         instructions=(
             "Initialize one ephemeral project before registering evidence. "
             "Reset it explicitly between independent projects. "
+            "For items, findings and insights, declare producer_kind: human with actor_ref, "
+            "ai_assisted with provider and model, or deterministic for a rule-generated text. "
+            "These are caller declarations, not verified identities. "
             "Model-callable evidence is synthetic, integrity-checked, and non-verbatim. "
             "Host-preloaded public text is verbatim, bounded, and memory-only. "
             "Raw evidence bytes and local paths are never returned or persisted."
@@ -170,13 +178,23 @@ def create_server(workspace: Workspace | None = None) -> MCPServer:
         item_id: str,
         normalized_content: str,
         evidence_ids: list[str],
+        producer_kind: str | None = None,
+        actor_ref: str | None = None,
+        provider: str | None = None,
+        model: str | None = None,
     ) -> dict[str, object]:
-        """Register a normalized intelligence item linked to evidence."""
+        """Register a normalized intelligence item linked to evidence.
+
+        Declare producer_kind (human, ai_assisted, or deterministic); the caller
+        supplies actor_ref for a human or provider and model for AI assistance.
+        """
         entity = IntelligenceItem(
             id=_id(item_id),
             normalized_content=bounded_text(normalized_content, MAX_SUMMARY_BYTES),
             evidence_ids=_ids(evidence_ids),
-            producer=_deterministic("mcp.register_item"),
+            producer=_declared_producer(
+                "mcp.register_item", producer_kind, actor_ref, provider, model,
+            ),
         )
         return entity_view(state.add_item(entity))
 
@@ -187,14 +205,24 @@ def create_server(workspace: Workspace | None = None) -> MCPServer:
         statement: str,
         supporting_item_ids: list[str],
         supporting_evidence_ids: list[str],
+        producer_kind: str | None = None,
+        actor_ref: str | None = None,
+        provider: str | None = None,
+        model: str | None = None,
     ) -> dict[str, object]:
-        """Register a finding with explicit item and evidence support."""
+        """Register a finding with explicit item and evidence support.
+
+        Declare producer_kind (human, ai_assisted, or deterministic); the caller
+        supplies actor_ref for a human or provider and model for AI assistance.
+        """
         entity = Finding(
             id=_id(finding_id),
             statement=bounded_text(statement, MAX_SUMMARY_BYTES),
             supporting_item_ids=_ids(supporting_item_ids),
             supporting_evidence_ids=_ids(supporting_evidence_ids),
-            producer=_deterministic("mcp.register_finding"),
+            producer=_declared_producer(
+                "mcp.register_finding", producer_kind, actor_ref, provider, model,
+            ),
         )
         return entity_view(state.add_finding(entity))
 
@@ -205,14 +233,24 @@ def create_server(workspace: Workspace | None = None) -> MCPServer:
         statement: str,
         supporting_finding_ids: list[str],
         supporting_evidence_ids: list[str],
+        producer_kind: str | None = None,
+        actor_ref: str | None = None,
+        provider: str | None = None,
+        model: str | None = None,
     ) -> dict[str, object]:
-        """Register an insight with explicit finding and evidence support."""
+        """Register an insight with explicit finding and evidence support.
+
+        Declare producer_kind (human, ai_assisted, or deterministic); the caller
+        supplies actor_ref for a human or provider and model for AI assistance.
+        """
         entity = Insight(
             id=_id(insight_id),
             statement=bounded_text(statement, MAX_SUMMARY_BYTES),
             supporting_finding_ids=_ids(supporting_finding_ids),
             supporting_evidence_ids=_ids(supporting_evidence_ids),
-            producer=_deterministic("mcp.register_insight"),
+            producer=_declared_producer(
+                "mcp.register_insight", producer_kind, actor_ref, provider, model,
+            ),
         )
         return entity_view(state.add_insight(entity))
 

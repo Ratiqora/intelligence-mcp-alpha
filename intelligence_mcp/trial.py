@@ -78,6 +78,7 @@ async def run_trial() -> dict[str, object]:
                 "register_item",
                 {
                     "item_id": "trial-item-1",
+                    "producer_kind": "deterministic",
                     "normalized_content": "The synthetic project has a bounded objective.",
                     "evidence_ids": ["trial-evidence-1"],
                 },
@@ -87,6 +88,7 @@ async def run_trial() -> dict[str, object]:
                 "register_finding",
                 {
                     "finding_id": "trial-finding-1",
+                    "producer_kind": "deterministic",
                     "statement": "The project objective is explicitly traceable.",
                     "supporting_item_ids": ["trial-item-1"],
                     "supporting_evidence_ids": ["trial-evidence-1"],
@@ -97,6 +99,7 @@ async def run_trial() -> dict[str, object]:
                 "register_insight",
                 {
                     "insight_id": "trial-insight-1",
+                    "producer_kind": "deterministic",
                     "statement": "The project can be evaluated through a closed evidence trace.",
                     "supporting_finding_ids": ["trial-finding-1"],
                     "supporting_evidence_ids": ["trial-evidence-1"],

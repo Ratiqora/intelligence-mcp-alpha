@@ -43,6 +43,6 @@ class PublicServerTest(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(view["source_record_id"], "s1")
                 self.assertNotIn(sample, result.model_dump_json())
             await call("register_item", item_id="i1", normalized_content="summary",
-                       evidence_ids=["missing"])
+                       evidence_ids=["missing"], producer_kind="deterministic")
             invalid = await session.call_tool("validate_project", {})
             self.assertTrue(invalid.is_error)

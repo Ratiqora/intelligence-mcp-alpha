@@ -20,6 +20,7 @@ def _producer(entity: IntelligenceItem | Finding | Insight) -> dict[str, str | N
     value = entity.producer
     return {
         "kind": value.kind.value,
+        "attribution": "caller_declared",
         "method": value.method,
         "method_version": value.method_version,
         "actor_ref": value.actor_ref,
