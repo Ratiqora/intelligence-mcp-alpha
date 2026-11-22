@@ -68,7 +68,7 @@ class WorkbenchTest(unittest.TestCase):
         self.assertEqual(status, 200)
         report = result["markdown"]
         self.assertIn(self.draft["question"], report)
-        self.assertIn("| O1 | Supports the hypothesis | Upload failed&#46; | S1 |", report)
+        self.assertIn("| O1 | Supports the hypothesis | Upload failed. | S1 |", report)
         self.assertIn("| O2 | Challenges the hypothesis |", report)
         self.assertIn("| S2 |", report)
         self.assertIn("S2 (Public citation): Public report B", report)
@@ -89,6 +89,14 @@ class WorkbenchTest(unittest.TestCase):
         status, result = self.submit(self.draft)
         self.assertEqual(status, 200)
         self.assertNotIn("S2", result["markdown"])
+
+    def test_markdown_prose_stays_readable_without_turning_input_into_markup(self):
+        self.draft["next"] = "Re-test at 10:30. Keep [example](https://example.test) as text."
+        status, result = self.submit(self.draft)
+        self.assertEqual(status, 200)
+        self.assertIn("Re-test at 10:30.", result["markdown"])
+        self.assertNotIn("[example](", result["markdown"])
+        self.assertNotIn("https://example.test", result["markdown"])
 
     def test_reopen_round_trip_preserves_authorship_and_rebuilds_report(self):
         self.draft["sources"][1]["id"] = "S9"
